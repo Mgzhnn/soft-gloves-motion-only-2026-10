@@ -1,0 +1,4 @@
+{
+  "execution_condition": "still_contact",
+  "_note": "Declared secondary-analysis variant: contact-type actions execute only when the hand is nearly still, stillness read from the scene record (layout v2). Every other FSMConfig field keeps its default; durations are placeholders until measured on the glove."
+}

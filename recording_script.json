@@ -1,0 +1,15 @@
+{
+  "schema": "sg-recording-script/1",
+  "status": "draft_operator_feasibility_script_not_a_validated_study_protocol",
+  "duration_s": 270,
+  "blocks": [
+    {"start_s": 0, "end_s": 20, "instruction": "Rest both hands; check that both gloves, the green cup and the red marker fixed to the jar body (not the lid) remain in view."},
+    {"start_s": 20, "end_s": 60, "instruction": "Separate right- then left-hand cup grasps; pause at rest between attempts."},
+    {"start_s": 60, "end_s": 100, "instruction": "Left hand holds jar; right hand approaches and grasps cup. Keep the sequential two-hand case."},
+    {"start_s": 100, "end_s": 140, "instruction": "Swap hands: right holds jar; left approaches and grasps cup."},
+    {"start_s": 140, "end_s": 180, "instruction": "Contact without requesting grasp; hover, hesitate and withdraw; include rest pauses."},
+    {"start_s": 180, "end_s": 220, "instruction": "Both hands approach together, then one grasps while the other makes an unrelated movement."},
+    {"start_s": 220, "end_s": 250, "instruction": "Brief natural hand crossing, small head turn and hand disappearance/reappearance."},
+    {"start_s": 250, "end_s": 270, "instruction": "Finish at rest with both hands visible."}
+  ]
+}

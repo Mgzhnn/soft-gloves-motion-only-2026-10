@@ -1,0 +1,9 @@
+{
+  "schema": "sg-offline/3",
+  "simulation_only": true,
+  "max_age_s": 0.25,
+  "max_velocity_gap_s": 0.25,
+  "proposal_score_threshold": 0.6,
+  "task_gate": false,
+  "allow_kinetics_features": false
+}

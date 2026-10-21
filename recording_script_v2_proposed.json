@@ -1,0 +1,24 @@
+{
+  "schema": "sg-recording-script/1",
+  "status": "proposed_v2_2026-10-02_awaiting_decision_not_a_validated_study_protocol",
+  "proposed_by": "agent, from the 28 September 2026 independent review (items B4, EVA-8, NOV-1)",
+  "changes_from_v1": [
+    "every grasp block ends with an explicit release by placing, so release gets labels now even though only grasp is scored",
+    "a same-object bimanual block (both hands on one cup) and a close-objects block (cup and jar 10 cm apart), where cross-hand association should matter",
+    "attempt counts are fixed per block so opportunities per person are known in advance",
+    "duration 300 s; the 23 Sep 270-second script stays the accepted default until a decision is recorded"
+  ],
+  "duration_s": 300,
+  "blocks": [
+    {"start_s": 0, "end_s": 20, "instruction": "Rest both hands flat on the table; check that both gloves, the green cup and the red marker fixed to the jar body (not the lid) remain in view."},
+    {"start_s": 20, "end_s": 60, "instruction": "Right hand: grasp the cup, hold 2 s, release by placing it back, return to rest. Three attempts. Then left hand: the same, three attempts."},
+    {"start_s": 60, "end_s": 100, "instruction": "Left hand holds the jar body; right hand reaches, grasps the cup, holds 2 s, releases by placing. Three attempts; rest between attempts while the left keeps holding."},
+    {"start_s": 100, "end_s": 140, "instruction": "Swap: right hand holds the jar body; left hand reaches, grasps the cup, holds 2 s, releases by placing. Three attempts."},
+    {"start_s": 140, "end_s": 170, "instruction": "Same object, both hands: grasp the cup together (one hand on the body, one on the handle), lift 5 cm, place, release both. Three attempts."},
+    {"start_s": 170, "end_s": 200, "instruction": "Close objects: cup and jar about 10 cm apart. Reach past the near object and grasp the far one, release; then grasp the near one, release. Right hand twice, left hand twice."},
+    {"start_s": 200, "end_s": 230, "instruction": "Contact without requesting a grasp: rest a hand on the cup 3 s without grasping; hover, hesitate and withdraw; include rest pauses. Two attempts per hand."},
+    {"start_s": 230, "end_s": 260, "instruction": "Both hands approach together, then one grasps and releases while the other makes an unrelated movement (adjusts a sleeve). Twice per side."},
+    {"start_s": 260, "end_s": 290, "instruction": "Brief natural hand crossing, 3-5 s of slow head turning with hands still, and one hand leaving and re-entering the view."},
+    {"start_s": 290, "end_s": 300, "instruction": "Finish at rest with both hands visible."}
+  ]
+}
