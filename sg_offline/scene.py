@@ -322,7 +322,9 @@ class PlaneGeometry:
                 reversals[hand.identity] = None
                 continue
             chain = self.heights[hand.identity]
-            if len(chain) >= 2 and chain[-1][1] > chain[-2][1]:
+            if len(chain) < 2:
+                self.rates.pop(hand.identity, None)  # the chain restarted (gap, calibration change): older rates belong to another stretch
+            elif chain[-1][1] > chain[-2][1] and (not self.rates.get(hand.identity) or self.rates[hand.identity][-1][1] < chain[-1][1]):
                 secant = (chain[-1][0] - chain[-2][0]) / (chain[-1][1] - chain[-2][1])
                 self.rates[hand.identity] = (self.rates.get(hand.identity, []) + [(secant, chain[-1][1])])[-(self.reversal_window + 1):]
             rates = [r for r, _ in self.rates.get(hand.identity, []) if abs(r) > self.deadband]

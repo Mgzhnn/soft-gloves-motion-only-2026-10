@@ -250,7 +250,7 @@ def test_release_labels_train_and_score_under_v2_with_release_admitted():
     fit_recorded(model, examples, "synthetic", steps=60, lr=.05)
     rows = Replay(Config(rate_window=8, feature_layout="v2", proposal_score_threshold=.5), model, scenes=scenes).run(packets)
     scored = evaluate_opportunities(rows, ops, early_limit_s=.1)
-    assert scored[2]["hands"][1]["result"] in ("compatible_first", "wrong_timing_first", "missed_including_withheld")
+    assert scored[2]["hands"][1]["result"] == "compatible_first" and scored[2]["hands"][1]["first_proposal"][1] == "R"
     assert scored[0]["hands"][1]["accepted_actions"] == ("G",) and scored[2]["hands"][1]["accepted_actions"] == ("R",)
 
 
@@ -350,8 +350,10 @@ def test_replay_packets_and_scoring_tools_take_the_layout_scene_floor_fsm_and_ad
                                         model="rules_actions", fsm_config=FSMConfig(confirm_ticks=1))
     assert summary["model"] == "rules_actions" and summary["scene"]["sha256"] and summary["fsm"]["right"]["commands"]["close"] >= 1
     assert (tmp_path / "out" / "commands.jsonl").exists() and (tmp_path / "out" / "fsm_states.jsonl").exists()
+    bare = tmp_path / "bare"; bare.mkdir()                                       # packets without a scene file
+    (bare / "packets.jsonl").write_text((run / "packets.jsonl").read_text())
     with pytest.raises(ValueError, match="scene"):
-        replay_packets.replay_run(run, tmp_path / "out2", Config(feature_layout="v2"), tmp_path / "no.csv", "t", scene_path=None) if not (run / "scene.jsonl").exists() else (_ for _ in ()).throw(ValueError("scene"))
+        replay_packets.replay_run(bare, tmp_path / "out2", Config(feature_layout="v2"), tmp_path / "no.csv", "t", scene_path=None)
     assert score_requests.ENDPOINTS == ("proposals", "accepted_commands")
     with pytest.raises(ValueError, match="admitted actions"):
         score_requests.score(tmp_path / "m.json", tmp_path / "out", tmp_path / "l.json", admitted_actions=("X",))
@@ -515,7 +517,7 @@ def test_comparison_runs_risk_controlled_selection_on_calibration_people_the_fit
     from test_review_implementation import people_sessions  # noqa: F401
     sessions = people_sessions()
     report = experiment.compare(sessions, arms=("rules", "kt_r"), selection="risk_control", risk_alpha=.5, max_unwanted_proposals_per_hand_minute=1e9,
-                                thresholds=(.3, .6), steps=3, synthetic_check=True)
+                                thresholds=(.02, .3), steps=3, synthetic_check=True)   # 3 passes: silent at 0.3, proposing at 0.02
     assert report["configuration"]["selection"] == "risk_control" and report["configuration"]["risk_alpha"] == .5
     for fold in report["folds"]:
         if fold["arm"] == "rules":
@@ -525,9 +527,8 @@ def test_comparison_runs_risk_controlled_selection_on_calibration_people_the_fit
         assert fold["early_stopping"]["criterion"] is None                                              # fitted for all passes: calibration people unseen
         risk = fold["risk_control"]
         assert risk["n_calibration_people"] == len(cal) and risk["alpha_achievable"] == pytest.approx(1 / (len(cal) + 1))
-        assert fold["development_budget_feasible"] is (risk["threshold"] is not None)
-        if risk["threshold"] is not None:
-            assert fold["reporting_threshold"] == risk["threshold"] and fold["development_selection_reason"].startswith("risk-controlled")
+        assert risk["silent_thresholds"] == [.3] and risk["threshold"] == .02 and fold["development_budget_feasible"] is True
+        assert fold["reporting_threshold"] == risk["threshold"] and fold["development_selection_reason"].startswith("risk-controlled")
     with pytest.raises(ValueError, match="risk_alpha"):
         experiment.compare(sessions, arms=("rules",), selection="risk_control", max_unwanted_proposals_per_hand_minute=1., synthetic_check=True)
     with pytest.raises(ValueError, match="budget"):

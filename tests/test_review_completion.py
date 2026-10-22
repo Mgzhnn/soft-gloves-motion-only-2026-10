@@ -377,7 +377,8 @@ def test_a_declared_checkpoint_hash_is_verified_when_the_file_is_given(tmp_path)
     checkpoint = tmp_path / "model.pt"; checkpoint.write_bytes(b"weights")
     import hashlib
     good = hashlib.sha256(b"weights").hexdigest()
-    entry = dict(packets="packets.jsonl", ledger="ledger.json", origin_s=0.,
+    from test_review_implementation import write_manifest
+    entry = dict(packets="packets.jsonl", ledger="ledger.json", manifest=write_manifest(tmp_path / "recording.json", "synthetic-person"),
                  perception_provenance=dict(fit="fixed_external", model_id="m", checkpoint_sha256="0"*64, checkpoint_path="model.pt"))
     with pytest.raises(ValueError, match="checkpoint"):
         load_sessions([entry], tmp_path)

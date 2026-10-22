@@ -165,7 +165,31 @@ def proposal_runs(ticks):
     return runs
 
 
-def _score_hand(allowed, eligible, i, start, end, session_rows=(), early_limit_s=0., rearm_s=None):
+def _tolerated_early_ticks(ticks, request_s, early_limit_s, events=False):
+    """Ticks before ``request_s`` of a proposal run that began at most ``early_limit_s`` before the hand's next request
+    window and is still running when it opens. That request is credited with the run, so a no-request row must not
+    also charge it as unwanted. With ``events`` (accepted commands, one tick each) it is the first command inside the
+    tolerance instead, run or not."""
+    if events:
+        early = [t for t, proposed, _ in ticks if proposed and t < request_s and request_s - t <= early_limit_s]
+        return set(early[:1])
+    run = []
+    for t, proposed, outcome in ticks:
+        if proposed and run and run[-1][1] == outcome:
+            run.append((t, outcome))
+        elif proposed:
+            run = [(t, outcome)]
+        else:
+            run = []
+        if t >= request_s:
+            break
+    if not run or run[-1][0] < request_s or run[0][0] >= request_s or request_s - run[0][0] > early_limit_s:
+        return set()
+    return {t for t, _ in run if t < request_s}
+
+
+def _score_hand(allowed, eligible, i, start, end, session_rows=(), early_limit_s=0., rearm_s=None, next_request_s=None,
+                events=False):
     """Score one hand over one acceptable window [start, end).
 
     ``first_proposal`` is the first proposed tick inside the eligible rows, as before. New (2 Oct 2026):
@@ -180,8 +204,19 @@ def _score_hand(allowed, eligible, i, start, end, session_rows=(), early_limit_s
     Before this, a request preceded by 3 s of continuous proposing still scored ``compatible_first``
     (independent review, 28 Sep 2026). Also reported: proposal runs and onsets inside the window (runs
     that begin inside it) and the number of proposals since the hand's last re-arm point.
+    In a no-request row, the ticks of a run the hand's next request (starting at ``next_request_s``) is credited with
+    under ``early_limit_s`` are not proposals of this row (``tolerated_early_ticks`` counts them).
+    ``events``: the ticks are accepted commands, single events rather than runs, so a command at most ``early_limit_s``
+    before the window is the request's first event even though nothing is still running when the window opens.
     """
     ticks = _hand_ticks(eligible, i)
+    tolerated = set()
+    if allowed == ("NQ",) and early_limit_s > 0 and next_request_s is not None and session_rows:
+        session = _hand_ticks(session_rows, i)
+        if events:  # the request credits the first command after its re-arm point, which this row starts after
+            session = [tk for tk in session if tk[0] >= start]
+        tolerated = _tolerated_early_ticks(session, next_request_s, early_limit_s, events)
+        ticks = [(t, p and t not in tolerated, o) for t, p, o in ticks]
     issued = [(t, o) for t, p, o in ticks if p]
     first = issued[0] if issued else None
     runs = proposal_runs(ticks)
@@ -199,6 +234,11 @@ def _score_hand(allowed, eligible, i, start, end, session_rows=(), early_limit_s
         # 5 October 2026 this case failed the request whatever the declared tolerance, while the same situation
         # labelled as two rows was admitted within it. With the default tolerance (0) the result is unchanged.
         early_by = max(early_by, start - first[0])
+    if events and allowed not in (None, ("NQ",)) and early_limit_s > 0:
+        early = [(t, o) for t, p, o in history if p and start - t <= early_limit_s and (rearm_s is None or t >= rearm_s)]
+        if early and (first is None or early[0][0] < first[0]):
+            first = early[0]; issued = [first] + [x for x in issued if x[0] != first[0]]
+            run_start, early_by = first[0], start - first[0]
     since_rearm = sum(1 for t, p, _ in history if p and (rearm_s is None or t >= rearm_s))
     if allowed is None:
         result = "unknown_reference"
@@ -217,7 +257,8 @@ def _score_hand(allowed, eligible, i, start, end, session_rows=(), early_limit_s
                 acceptable_window_s=(start, end),
                 proposal_runs=len(runs), proposal_onsets=len(runs) - int(active),
                 run_active_at_window_start=active, proposal_run_start_s=run_start, early_by_s=early_by,
-                early_limit_s=early_limit_s, proposals_since_rearm_before_window=since_rearm, rearm_s=rearm_s)
+                early_limit_s=early_limit_s, proposals_since_rearm_before_window=since_rearm, rearm_s=rearm_s,
+                tolerated_early_ticks=sum(1 for t, _, _ in _hand_ticks(eligible, i) if t in tolerated))
 
 
 def _request_groups(opportunities):
@@ -249,6 +290,22 @@ def _request_window_ends(opportunities):
     return ends
 
 
+def _request_window_starts(opportunities):
+    """(participant, session, hand) -> starts of every known request window of that hand."""
+    starts = {}
+    for op in opportunities:
+        for i, allowed in enumerate(op.acceptable):
+            if allowed is not None and allowed != ("NQ",):
+                window = op.hand_windows_s[i] if op.hand_windows_s else (op.start_s, op.end_s)
+                starts.setdefault((op.participant_id, op.session_id, i), []).append(window[0])
+    return starts
+
+
+def _next_request(starts, key, start):
+    later = [s for s in starts.get(key, []) if s > start]
+    return min(later) if later else None
+
+
 def _rearm_point(ends, key, start):
     prior = [e for e in ends.get(key, []) if e <= start + BOUNDARY_TOLERANCE_S]
     return max(prior) if prior else None
@@ -274,6 +331,8 @@ def evaluate_opportunities(rows, opportunities, early_limit_s=0.):
         raise ValueError("duplicate independent opportunity reference")
     groups = _request_groups(opportunities)
     ends = _request_window_ends(opportunities)
+    starts = _request_window_starts(opportunities)
+    events = any(r.get("endpoint") == "accepted_command_secondary" for r in rows)  # rows from fsm.command_rows
     by_session = {}
     for r in rows:
         by_session.setdefault((r["inputs"]["participant_id"], r["inputs"]["session_id"]), []).append(r)
@@ -304,13 +363,14 @@ def evaluate_opportunities(rows, opportunities, early_limit_s=0.):
                 end = last_op.hand_windows_s[i][1] if last_op.hand_windows_s else last_op.end_s
                 group_rows = rows_between(first_op, last_op)
                 rearm = _rearm_point(ends, (op.participant_id, op.session_id, i), start)
-                hand = _score_hand(allowed, group_rows, i, start, end, session_rows, early_limit_s, rearm)
+                hand = _score_hand(allowed, group_rows, i, start, end, session_rows, early_limit_s, rearm, events=events)
                 hand.update(request_id=rid, grouped_opportunities=[o.opportunity_id for o in group])
             else:
                 start, end = op.hand_windows_s[i] if op.hand_windows_s else (op.start_s, op.end_s)
                 group_rows = eligible
                 rearm = _rearm_point(ends, (op.participant_id, op.session_id, i), start)
-                hand = _score_hand(allowed, eligible, i, start, end, session_rows, early_limit_s, rearm)
+                hand = _score_hand(allowed, eligible, i, start, end, session_rows, early_limit_s, rearm,
+                                   _next_request(starts, (op.participant_id, op.session_id, i), start), events)
                 if rid is not None:
                     hand["request_id"] = rid
             if allowed is None:

@@ -2,13 +2,14 @@
 
 For externally fixed perception, use {"sessions":[...], ...settings}.
 For adapted perception, use {"folds":[{"held_out_person":"p1","sessions":[...]}, ...], ...settings}.
-Each session names packets, ledger, origin_s and perception_provenance. Adapted folds must use
+Each session names packets, ledger, manifest (the recording manifest: the session's time origin, identity and clock are
+read from it) and perception_provenance; an optional origin_s must agree with the manifest. Adapted folds must use
 observations produced without fitting OR selecting perception on the held-out person.
 """
 import argparse,hashlib,json
 from pathlib import Path
 from sg_offline.inputs import packets_from_jsonl
-from sg_offline.ledger import read_opportunity_ledger,to_opportunities
+from sg_offline.ledger import read_opportunity_ledger,session_origin_s,to_opportunities
 from sg_offline.experiment import compare, contrasts_from_folds
 from sg_offline.replay import Config
 from sg_offline.scene import read_scenes
@@ -26,6 +27,14 @@ def load_sessions(entries,base,held=None,admitted_actions=("G",),feature_layout=
         scenes=read_scenes(scene_path) if scene_path is not None else None
         if feature_layout!="v1" and scenes is None:raise ValueError("feature layout "+feature_layout+" needs a scene file per session (key 'scene')")
         if not packets or ledger["clock"]["name"]!=packets[0].clock:raise ValueError("ledger/packet clock mismatch")
+        if not row.get("manifest"):raise ValueError("each session names its recording manifest (key 'manifest'); the time origin is read from it")
+        manifest_path=(base/row["manifest"]).resolve();origin,clock=session_origin_s(manifest_path)
+        recording=json.loads(manifest_path.read_text(encoding="utf-8"));identity=(recording.get("participant_id"),recording.get("session_id"))
+        if (ledger["participant_id"],ledger["session_id"])!=identity or (packets[0].participant_id,packets[0].session_id)!=identity:
+            raise ValueError("ledger, packets and recording manifest must name the same participant and session")
+        if clock!=ledger["clock"]["name"]:raise ValueError("ledger/recording clock mismatch")
+        if row.get("origin_s") is not None and abs(float(row["origin_s"])-origin)>1e-6:
+            raise ValueError(f"origin_s {row['origin_s']} differs from the recording manifest's session origin {origin}")
         perception=dict(row.get("perception_provenance",{}))
         if not perception.get("model_id") or not perception.get("checkpoint_sha256"):
             raise ValueError("perception model identity and checkpoint hash required")
@@ -46,9 +55,10 @@ def load_sessions(entries,base,held=None,admitted_actions=("G",),feature_layout=
             if held in set(perception["training_people"])|set(perception["development_people"]):
                 raise ValueError("outer test person leaked into perception fitting or selection")
         elif perception.get("fit")!="fixed_external":raise ValueError("unknown perception fit provenance")
-        ops,out=to_opportunities(ledger,row.get("origin_s"),admitted_actions)
+        ops,out=to_opportunities(ledger,origin,admitted_actions)
         sessions.append(dict(packets=packets,opportunities=ops,scenes=scenes))
-        sources.append(dict(packets=str(packet_path),ledger=str(ledger_path),origin_s=row.get("origin_s"),
+        sources.append(dict(packets=str(packet_path),ledger=str(ledger_path),manifest=str(manifest_path),origin_s=origin,
+            manifest_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
             packets_sha256=hashlib.sha256(packet_path.read_bytes()).hexdigest(),
             ledger_sha256=hashlib.sha256(ledger_path.read_bytes()).hexdigest(),
             scene=None if scene_path is None else dict(path=str(scene_path),sha256=hashlib.sha256(scene_path.read_bytes()).hexdigest()),

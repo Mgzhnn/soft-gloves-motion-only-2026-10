@@ -162,14 +162,16 @@ def fit_learned_arm(model,examples,dev_examples,steps,lr,regularization,split_id
     return before,mean_log_loss(model,examples),stopping
 
 
-def risk_controlled_threshold(losses_by_person,thresholds,alpha):
+def risk_controlled_threshold(losses_by_person,thresholds,alpha,silent=()):
     """Distribution-free selection of the operating point (16 Oct 2026, later): conformal risk control with a binary loss.
 
-    ``losses_by_person[person][k]`` is 1 when that calibration person's burden at ``thresholds[k]`` exceeded the budget
-    (or the point was silent for everyone), else 0; the loss is made monotone non-increasing in the threshold by taking
-    the running maximum from the right (a higher threshold can only propose less, so this is conservative, never
-    optimistic). The chosen point is the SMALLEST threshold whose conformal risk (sum of losses + 1) / (n + 1) is at most
-    ``alpha`` (Angelopoulos et al., conformal risk control, loss bounded by 1; verify the citation before the paper).
+    ``losses_by_person[person][k]`` is 1 when that calibration person's burden at ``thresholds[k]`` exceeded the budget,
+    else 0; the loss is made monotone non-increasing in the threshold by taking the running maximum from the right (a
+    higher threshold can only propose less, so this is conservative, never optimistic). ``silent`` lists the indices of
+    points that proposed nothing for anyone: they keep their burden loss (a loss of 1 there would be copied to every
+    lower threshold by the envelope) and are never chosen. The chosen point is the SMALLEST other
+    threshold whose conformal risk (sum of losses + 1) / (n + 1) is at most ``alpha`` (Angelopoulos et al., conformal
+    risk control, loss bounded by 1).
     Under exchangeability of the calibration people and a new person, the expected loss of the new person is at most
     alpha: the budget holds for a new person with probability at least 1 - alpha. The smallest alpha that n people can
     certify is 1 / (n + 1). The threshold is None when no point meets alpha."""
@@ -180,8 +182,10 @@ def risk_controlled_threshold(losses_by_person,thresholds,alpha):
     if any(len(losses_by_person[p])!=K for p in people):raise ValueError("one loss per threshold per person")
     mono={p:[max(losses_by_person[p][k:]) for k in range(K)] for p in people}
     risks=[(sum(mono[p][k] for p in people)+1)/(n+1) for k in range(K)]
-    chosen=next((k for k in range(K) if risks[k]<=alpha),None)
-    return dict(method="conformal risk control, binary loss (burden above budget, or silent for everyone), monotone envelope from the right",
+    silent=set(silent)
+    chosen=next((k for k in range(K) if k not in silent and risks[k]<=alpha),None)
+    return dict(method="conformal risk control, binary loss (burden above budget), monotone envelope from the right; silent points never chosen",
+                silent_thresholds=[thresholds[k] for k in sorted(silent)],
                 alpha=alpha,alpha_achievable=1/(n+1),n_calibration_people=n,calibration_people=people,
                 conformal_risk_by_threshold=dict(zip(map(str,thresholds),risks)),
                 raw_losses=dict(zip(map(str,thresholds),[[losses_by_person[p][k] for p in people] for k in range(K)])),
@@ -208,11 +212,9 @@ def risk_control_selection(model,calibration,config,thresholds,budget,burden_uni
                           success=float(np.mean(successes)) if successes else None,metrics=metrics))
     missing=sorted({s["packets"][0].participant_id for s in calibration}-set(losses))
     if missing:raise ValueError(f"calibration people without labelled no-request exposure cannot calibrate a burden: {missing}")
-    # a point silent on every calibration person is a loss of 1 for everyone: a controller that never acts is not a usable point
-    for k,point in enumerate(curve):
-        if not point["proposes"]:
-            for person in losses:losses[person][k]=1
-    record=risk_controlled_threshold(losses,tuple(thresholds),alpha)
+    # a point silent on every calibration person is not a usable point: a controller that never acts
+    silent=[k for k,point in enumerate(curve) if not point["proposes"]]
+    record=risk_controlled_threshold(losses,tuple(thresholds),alpha,silent)
     for point in curve:point["feasible"]=(point["threshold"]==record["threshold"])
     if record["threshold"] is None:
         return max(thresholds),curve,False,f"no operating point certifies the budget at alpha {alpha} on {record['n_calibration_people']} calibration people (achievable alpha {record['alpha_achievable']:.3f})",record

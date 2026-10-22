@@ -413,6 +413,13 @@ def _recorded(packet, person):
                    objects=tuple(mark(o) for o in packet.objects), telemetry=tuple(mark(t) for t in packet.telemetry))
 
 
+def write_manifest(path, person, session="synthetic-session", clock="session", origin=0.):
+    """The fields of a recording manifest that the comparison reads: identity, clock and the first frame's stamps."""
+    stamp = dict(available_s=origin, clock=clock)
+    path.write_text(json.dumps(dict(participant_id=person, session_id=session, frames=[dict(rgb_stamp=stamp, depth_stamp=stamp)])))
+    return path.name
+
+
 def _comparison_inputs(tmp_path, people=("p1", "p2", "p3")):
     from dataclasses import asdict
     from import_requests import convert
@@ -421,7 +428,8 @@ def _comparison_inputs(tmp_path, people=("p1", "p2", "p3")):
         (tmp_path / f"{person}.packets.jsonl").write_text("".join(json.dumps(asdict(_recorded(p, person))) + "\n" for p in scenarios()))
         timeline = [dict(start_s="0", end_s="0.9", left="G", right="NQ"), dict(start_s="0.9", end_s="2", left="NQ", right="NQ")]
         (tmp_path / f"{person}.ledger.json").write_text(json.dumps(convert(timeline, person, "synthetic-session", "a", "session", 2.)))
-        entries.append(dict(packets=f"{person}.packets.jsonl", ledger=f"{person}.ledger.json", origin_s=0.,
+        entries.append(dict(packets=f"{person}.packets.jsonl", ledger=f"{person}.ledger.json",
+                            manifest=write_manifest(tmp_path / f"{person}.recording.json", person),
                             perception_provenance=dict(fit="fixed_external", model_id="fixture", checkpoint_sha256="0" * 64)))
     return entries
 
