@@ -45,8 +45,8 @@ THRESHOLDS = THRESHOLD_GRID
 SPEC_KEYS = frozenset(("scope", "rate_window", "decision_rule", "training", "development", "untouched", "arms", "seeds",
                        "max_unwanted_proposals_per_hand_minute", "budget_status", "burden_unit", "early_limit_s", "thresholds",
                        "steps", "patience", "lr", "regularization", "window",
-                       "feature_layout", "admitted_actions", "posterior_forgetting"))  # 16 Oct 2026: layout v1|v2 and the actions scored as requests (default ["G"])
-SESSION_KEYS = frozenset(("run", "manifest", "ledger", "scene"))  # scene (16 Oct 2026): scene.jsonl for feature layout v2; defaults to RUN/scene.jsonl when it exists
+                       "feature_layout", "admitted_actions", "posterior_forgetting"))  # layout v1|v2 and the actions scored as requests (default ["G"])
+SESSION_KEYS = frozenset(("run", "manifest", "ledger", "scene"))  # scene: scene.jsonl for feature layout v2; defaults to RUN/scene.jsonl when it exists
 _PAIR_NAMES = {pair_index(l, r): f"{l}|{r}" for l in OUTCOMES for r in OUTCOMES}
 
 
@@ -109,7 +109,7 @@ def diagnose(training, development, arms, seeds=(0,), steps=2000, lr=.01, regula
     records = []; models = []
     for name in arms:
         for seed in (seeds if name not in FLOOR_ARMS else seeds[:1]):
-            model = factory(name, seed, window, config.feature_layout)   # layout v2 readouts carry the cue block (16 Oct 2026)
+            model = factory(name, seed, window, config.feature_layout)   # layout v2 readouts carry the cue block
             examples, accounting = _examples(model, training, window, config)
             if not examples:
                 raise ValueError("no usable training labels")
@@ -259,7 +259,7 @@ def markdown_report(report):
 
 
 def check_specification_keys(spec):
-    """Refuse keys this tool does not read. A misspelt or nested frozen setting
+    """Refuse keys this tool does not read. A misspelt or nested declared setting
     (``early_limit``, a run_comparison-style ``config`` block, ``threshold_grid``) used to fall back silently to the code
     default, which the record then reported as if it had been declared."""
     if not isinstance(spec, dict):
@@ -308,7 +308,7 @@ def run_diagnostic(spec_path, out_dir, manifest_csv=DEFAULT_MANIFEST_CSV, comman
     arms = tuple(spec["arms"]); seeds = tuple(spec.get("seeds", (0,)))
     budget = spec["max_unwanted_proposals_per_hand_minute"]; burden_unit = spec.get("burden_unit", "onsets"); early = float(spec.get("early_limit_s", 0.))
     thresholds = tuple(spec.get("thresholds", THRESHOLDS)); steps = int(spec.get("steps", 2000)); lr = float(spec.get("lr", .01)); reg = float(spec.get("regularization", .001)); window = int(spec.get("window", 15))
-    patience = spec.get("patience"); patience = None if patience is None else int(patience)   # frozen rule: all passes, best development pass kept
+    patience = spec.get("patience"); patience = None if patience is None else int(patience)   # default rule: all passes, best development pass kept
     records, models = diagnose(training, development, arms, seeds, steps, lr, reg, thresholds, budget, burden_unit, early, window, config, patience=patience)
     out_dir.mkdir(parents=True, exist_ok=True)
     implementation = implementation_hashes(); git = git_state()

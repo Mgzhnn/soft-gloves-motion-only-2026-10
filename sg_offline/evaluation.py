@@ -87,8 +87,8 @@ class Opportunity:
 
     def __post_init__(self):
         # The evaluator, the statistics and the ledger summary compare ``acceptable`` with the tuple ("NQ",). An
-        # opportunity rebuilt from JSON carries lists; unnormalised, its no-request hand was scored as a missed
-        # request and its exposure vanished (architecture review, 5 October 2026). Lists become tuples here.
+        # opportunity rebuilt from JSON carries lists; unnormalised, its no-request hand would be scored as a missed
+        # request and its exposure would vanish. Lists become tuples here.
         if isinstance(self.acceptable, (list, tuple)):
             object.__setattr__(self, "acceptable", tuple(a if a is None or isinstance(a, str) else tuple(a) for a in self.acceptable))
         if self.hand_windows_s is not None:
@@ -192,17 +192,17 @@ def _score_hand(allowed, eligible, i, start, end, session_rows=(), early_limit_s
                 events=False):
     """Score one hand over one acceptable window [start, end).
 
-    ``first_proposal`` is the first proposed tick inside the eligible rows, as before. New (2 Oct 2026):
-    if the hand was ALREADY proposing that outcome without interruption when the window opened, the
+    ``first_proposal`` is the first proposed tick inside the eligible rows.
+    If the hand was ALREADY proposing that outcome without interruption when the window opened, the
     proposal did not begin here; ``proposal_run_start_s`` walks back through the session's earlier
     ticks to where the run began and ``early_by_s`` = start − run start. A request is
     ``wrong_timing_first`` when early_by_s exceeds the declared ``early_limit_s`` (default 0: strict).
     A first proposal inside the row but before the hand's own window is early by ``start`` minus its time,
-    under the same tolerance (5 Oct 2026). A run counts as uninterrupted only tick by tick: one tick that is
+    under the same tolerance. A run counts as uninterrupted only tick by tick: one tick that is
     not a proposal ends it, so on traces that flicker at the tick scale this check sees only the last burst
     (``proposals_since_rearm_before_window`` counts the earlier ones).
-    Before this, a request preceded by 3 s of continuous proposing still scored ``compatible_first``
-    (independent review, 28 Sep 2026). Also reported: proposal runs and onsets inside the window (runs
+    Without this, a request preceded by 3 s of continuous proposing would still score ``compatible_first``.
+    Also reported: proposal runs and onsets inside the window (runs
     that begin inside it) and the number of proposals since the hand's last re-arm point.
     In a no-request row, the ticks of a run the hand's next request (starting at ``next_request_s``) is credited with
     under ``early_limit_s`` are not proposals of this row (``tolerated_early_ticks`` counts them).
@@ -230,9 +230,9 @@ def _score_hand(allowed, eligible, i, start, end, session_rows=(), early_limit_s
                 break
         early_by = max(0., start - run_start)
     if first is not None and first[0] < start:
-        # The hand's window starts inside its row and the first proposal came before it: early by that much. Before
-        # 5 October 2026 this case failed the request whatever the declared tolerance, while the same situation
-        # labelled as two rows was admitted within it. With the default tolerance (0) the result is unchanged.
+        # The hand's window starts inside its row and the first proposal came before it: early by that much. Failing
+        # the request here whatever the declared tolerance would treat it unlike the same situation labelled as two
+        # rows, which is admitted within it. With the default tolerance (0) the result is unchanged.
         early_by = max(early_by, start - first[0])
     if events and allowed not in (None, ("NQ",)) and early_limit_s > 0:
         early = [(t, o) for t, p, o in history if p and start - t <= early_limit_s and (rearm_s is None or t >= rearm_s)]

@@ -1,12 +1,12 @@
-""" removal test for object perception: compare run_perception outputs made with different
+"""Removal test for object perception: compare run_perception outputs made with different
 object providers on IDENTICAL frames (same recording, same --decimate, --queue-policy fixed_latency).
 
 For every run directory: object availability per identity, unavailability reasons, 3-D positions. Across runs, an
 object is paired with the SAME object of the other run: by identity name when both runs use the same names, and
 otherwise (the plane provider's generic identities) one-to-one by nearest 3-D position within a gate that must be
-smaller than the spacing of distinct objects (default 0.05 m; the batch's cylinders stand 0.09-0.10 m apart). The
+smaller than the spacing of distinct objects (default 0.05 m; the recorded cylinders stand 0.09-0.10 m apart). The
 position agreement and the downstream replay outputs (proposal ticks per hand, first proposal time) are reported.
-Until 5 October 2026 pairing was nearest-within-0.15 m whatever the name, which paired a lone blue cylinder of one
+Pairing by nearest-within-0.15 m whatever the name would pair a lone blue cylinder of one
 run with the cream cylinder of the other. Runs of different recordings, and run folders written before the
 diagnostics carried ``frame_index`` and ``object_xyz``, are refused. This is software behaviour on one recording, not
 accuracy: no reference object positions exist.
@@ -35,8 +35,8 @@ def load_run(run_dir: Path) -> dict:
     provider = summary.get("object_provider", {}).get("kind", "unknown")
     absent = [key for key in ("frame_index", "object_xyz") if any(key not in d for d in diag)]
     if absent:
-        # Such a folder used to be joined by row number and reported with zero objects (found 5 October 2026).
-        raise ValueError(f"{run_dir}: perception_diagnostics.jsonl carries no {' / '.join(absent)} (a run written before 5 October 2026); "
+        # Joined by row number, such a folder would be reported with zero objects.
+        raise ValueError(f"{run_dir}: perception_diagnostics.jsonl carries no {' / '.join(absent)} (a run written before the diagnostics carried them); "
                          "it cannot be compared, rerun perception for it")
     frames = {d["frame_index"]: d for d in diag}
     identities = sorted({o for d in diag for o in d.get("objects", {})})

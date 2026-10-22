@@ -1,4 +1,4 @@
-"""Browser version of label_frames.py for a server without a display (16 October 2026).
+"""Browser version of label_frames.py for a server without a display.
 
 Same ledger, same ``Session`` and the same drawing as the window tool: the page shows one frame at its native size
 with the existing labels drawn, and the keys and mouse actions are those of the window tool (b + drag = hand box;

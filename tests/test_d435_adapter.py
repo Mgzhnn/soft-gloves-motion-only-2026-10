@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 import pytest
 
-# Without pyrealsense2 (the .venv-gpu environment) importing the adapter raised at collection and pytest then ran no test
-# at all unless this file was passed to --ignore; the module is now skipped there (5 October 2026).
+# Without pyrealsense2 importing the adapter raised at collection and pytest then ran no test
+# at all unless this file was passed to --ignore; the module is now skipped there.
 pytest.importorskip("pyrealsense2")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import d435_recording_adapter as adapter  # noqa: E402

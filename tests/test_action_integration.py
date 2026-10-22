@@ -1,9 +1,9 @@
-"""All-action integration of 16 October 2026: scene anchor (table plane + landmarks), feature layouts v1/v2, per-action
+"""All-action integration: scene anchor (table plane + landmarks), feature layouts v1/v2, per-action
 supervisor gates, the per-action floor, the simulated glove state machine and the accepted-command endpoint.
 
-Every test is synthetic (participant N = 0). The regression tests state what the snapshot ``2026-10-16_before_action_integration``
-could not do (no scene module, no layout, every non-grasp action withheld with one generic reason, no state machine); the
-GUARD tests pin what must stay: layout v1 features and decisions bit-identical to before, the frozen plan's arms unchanged.
+Every test is synthetic (participant N = 0). The regression tests state what the code could not do before
+this integration (no scene module, no layout, every non-grasp action withheld with one generic reason, no state machine); the
+GUARD tests pin what must stay: layout v1 features and decisions bit-identical to before, the declared arms unchanged.
 """
 import json
 from dataclasses import replace
@@ -155,7 +155,7 @@ def test_GUARD_layout_v1_is_the_42_column_layout_and_features_are_bit_identical_
     a = [b.features for _, b in bundles_for(packets, Config(rate_window=8))]
     b = [b.features for _, b in bundles_for(packets, Config(rate_window=8), scenes)]
     assert all(np.array_equal(x, y) for x, y in zip(a, b)) and all(bb.layout == "v1" for _, bb in bundles_for(packets, Config()))
-    # the frozen plan's arms and their sizes are unchanged
+    # the declared arms and their sizes are unchanged
     assert experiment.CORE_ARMS == ("rules", "rules_mc", "mi_learned", "mc_learned", "flat", "kt_set", "kt_r", "kt_r_mean", "kt_r_hard")
     sizes = {name: experiment.parameter_count(experiment.factory(name)) for name in ("mi_learned", "mc_learned", "flat", "kt_set", "kt_r", "kt_r_mean", "kt_r_hard")}
     assert sizes == dict(mi_learned=224, mc_learned=637, flat=2037, kt_set=2051, kt_r=2058, kt_r_mean=2058, kt_r_hard=2058)
@@ -359,7 +359,7 @@ def test_replay_packets_and_scoring_tools_take_the_layout_scene_floor_fsm_and_ad
         score_requests.score(tmp_path / "m.json", tmp_path / "out", tmp_path / "l.json", admitted_actions=("X",))
 
 
-# ---- temporal recursion on the joint scores (16 Oct 2026, later) --------------------------------------------------------
+# ---- temporal recursion on the joint scores -----------------------------------------------------------------------------
 
 def test_posterior_recursion_is_off_by_default_filters_flicker_and_resets_after_a_gap():
     world = World(); packets, scenes = _reach_and_release(world)
@@ -393,7 +393,7 @@ def test_posterior_recursion_is_off_by_default_filters_flicker_and_resets_after_
         Config(posterior_forgetting=1.)
 
 
-# ---- layout v3: fingertip aperture (16 Oct 2026, later) ----------------------------------------------------------------
+# ---- layout v3: fingertip aperture -------------------------------------------------------------------------------------
 
 def _tips(world, hand, k, t, aperture):
     base = {"thumb_mcp": hand + np.array([-.02, -.02, 0]), "index_mcp": hand + np.array([-.02, .02, 0]), "trapezium": hand + np.array([.03, 0, 0])}
@@ -437,7 +437,7 @@ def test_layout_v3_adds_the_aperture_block_and_reads_closing_and_opening_pose_fr
     for model in (LinearJoint(layout="v3"), FactorizedJoint(True, True, layout="v3"), FlatJoint(layout="v3"), HypothesisPoolMLP(layout="v3")):
         assert model.predict(bundles[9]).shape == (49,)
     assert experiment.parameter_count(experiment.factory("kt_r", layout="v3")) == 49 * 78
-    # a record without fingertips (every run before 16 Oct 2026) gives an invalid aperture, and v3 decisions equal v2 for the floor
+    # a record without fingertips (every run made before fingertips were recorded) gives an invalid aperture, and v3 decisions equal v2 for the floor
     without = {k: replace(s, landmarks=tuple(replace(l, extra={}) for l in s.landmarks)) for k, s in scenes.items()}
     v3_rows = Replay(Config(rate_window=8, feature_layout="v3"), ActionRules(), scenes=without).run(packets)
     v2_rows = Replay(Config(rate_window=8, feature_layout="v2"), ActionRules(), scenes=without).run(packets)
@@ -473,7 +473,7 @@ def test_fingertips_travel_from_the_detection_through_the_diagnostics_into_the_s
     assert callable(build_scene.build_scenes)
 
 
-# ---- sequence readouts under the cue layouts (16 Oct 2026, later) -------------------------------------------------------
+# ---- sequence readouts under the cue layouts ----------------------------------------------------------------------------
 
 def test_sequence_readouts_run_under_layout_v2_and_refuse_v1_bundles():
     pytest.importorskip("torch")
@@ -495,7 +495,7 @@ def test_sequence_readouts_run_under_layout_v2_and_refuse_v1_bundles():
     assert experiment.factory("gru_flat", 0, 4, "v2").layout == "v2"
 
 
-# ---- risk-controlled operating point (16 Oct 2026, later) ---------------------------------------------------------------
+# ---- risk-controlled operating point ------------------------------------------------------------------------------------
 
 def test_conformal_risk_control_picks_the_smallest_threshold_whose_risk_is_within_alpha():
     from sg_offline.experiment import risk_controlled_threshold

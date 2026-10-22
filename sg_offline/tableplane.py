@@ -1,7 +1,7 @@
 """Table-plane geometry from registered depth: back-projection, seeded RANSAC plane, height above the table.
 
 The reference removed the table with RANSAC and clustered the remaining points. This module provides both
-halves of proposed (5 October 2026): the plane-only comparator (``clusters`` on the above-table mask)
+halves of the object-perception comparison: the plane-only comparator (``clusters`` on the above-table mask)
 and the metric geometry a segmenter-based provider needs (3-D points inside a mask, height above the plane,
 centroid and extent). Everything is deterministic: RANSAC samples come from a generator seeded by the caller
 (use the frame index), so a replay reproduces bit for bit. No learned component lives here.

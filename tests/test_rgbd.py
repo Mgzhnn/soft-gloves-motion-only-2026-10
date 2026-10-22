@@ -194,7 +194,7 @@ def test_compensation_preserves_actual_hand_motion_and_missing_pose_withholds_ve
     assert motions["container"].velocity_mps == pytest.approx((0., 0., 0.))
     model = LinearJoint()
     model.W[7, -1] = 20.
-    # Without a pose (build 2) the grasp was withheld for missing relative velocity. Since build 3 the
+    # Without a pose the grasp used to be withheld for missing relative velocity. Now the
     # frame-invariant same-time distance rate supplies the approach rate, so the proposal is admitted
     # while directional velocity stays withheld and the provenance names the pose-free route.
     raw_rows = Replay(model=model).run([initial, changed])

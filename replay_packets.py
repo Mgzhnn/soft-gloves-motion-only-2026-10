@@ -5,11 +5,11 @@ Reads ``RUN_DIR/packets.jsonl`` (the validated ``sg-offline/3`` packets a percep
 replay configuration, source run and hashes), ``provenance.json`` and a copy of the source ``frame_times.csv``. The
 packets are not copied; the provenance names the source file and its hash. With the configuration the source run used
 the trace reproduces it tick for tick (the replay is deterministic), which is how a batch setting chosen on the
-development clip (``rate_window``, 7 October 2026) is applied to runs that already exist.
+development clip (``rate_window``) is applied to runs that already exist.
 usage: replay_packets.py RUN_DIR OUT_DIR [--rate-window K] [--manifest-csv PATH]
                          [--feature-layout v1|v2 --scene SCENE_JSONL] [--model rules|rules_actions] [--decision-rule RULE]
                          [--fsm] [--fsm-config JSON]
-16 Oct 2026: ``--feature-layout v2`` with ``--scene`` replays with the per-action cue block (scene records from the run or
+``--feature-layout v2`` with ``--scene`` replays with the per-action cue block (scene records from the run or
 from ``build_scene.py``); ``--model rules_actions`` is the per-action descriptive floor; ``--fsm`` additionally runs the
 simulated glove state machine over the trace and writes ``commands.jsonl``, ``fsm_states.jsonl`` and ``fsm_summary.json``.
 """
@@ -109,7 +109,7 @@ def main(argv=None) -> int:
     ap.add_argument("--model", default="rules", choices=sorted(MODELS)); ap.add_argument("--decision-rule", default="best_action_threshold")
     ap.add_argument("--fsm", action="store_true", help="also simulate the glove state machine over the trace (secondary endpoint)")
     ap.add_argument("--fsm-config", type=Path, help="JSON with FSMConfig fields (defaults otherwise)")
-    ap.add_argument("--posterior-forgetting", type=float, default=0., help="temporal recursion on the joint scores, 0 = off (plan setting, 16 Oct 2026)")
+    ap.add_argument("--posterior-forgetting", type=float, default=0., help="temporal recursion on the joint scores, 0 = off (plan setting)")
     a = ap.parse_args(argv)
     if a.rate_window < 1:
         ap.error("rate window must be a positive integer")

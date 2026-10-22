@@ -3,7 +3,7 @@
 Replays the stored packets of a deterministic perception run with each candidate window, scores every trace against
 the annotated ledger and applies a selection rule fixed BEFORE any number is seen:
   eligible windows: every scored request hand receives at least one proposal tick inside its acceptable window on the
-  primary run (a window that silences the baseline is not selectable: the silent-point rule of 2 October);
+  primary run (a window that silences the baseline is not selectable: the silent-point rule);
   choice: the eligible window with the fewest unwanted proposal onsets per no-request hand-minute on the primary run;
   ties -> the smaller window.
 A second run (another object provider) is reported as a check only. The strict early tolerance (0 s) is used for the

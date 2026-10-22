@@ -1,4 +1,4 @@
-"""Image-sequence export adapter and configurable colour targets (2 October 2026). Synthetic files, N=0."""
+"""Image-sequence export adapter and configurable colour targets. Synthetic files, N=0."""
 import json
 from pathlib import Path
 
@@ -14,7 +14,7 @@ import image_sequence_adapter as adapter
 
 
 def make_export(folder: Path, n=4, width=64, height=48, saturate_frame=0, skew_frame=None):
-    """A tiny export in the 29 Sep folder layout: depth PNGs, a colour avi, three timestamp tables."""
+    """A tiny export in the reference folder layout: depth PNGs, a colour avi, three timestamp tables."""
     stem = "20260929_000000"
     depth_dir = folder / f"{stem}_camera_depth"; depth_dir.mkdir(parents=True)
     (folder / f"{stem}_camera_depth_filled").mkdir()

@@ -17,7 +17,7 @@ from sg_offline.stats import MIN_PEOPLE_FOR_INTERVAL
 
 
 def load_sessions(entries,base,held=None,admitted_actions=("G",),feature_layout="v1"):
-    """16 Oct 2026: a session may name ``scene`` (scene.jsonl, needed for feature layout v2); ``admitted_actions`` are the
+    """A session may name ``scene`` (scene.jsonl, needed for feature layout v2); ``admitted_actions`` are the
     actions scored as requests (default G); both are recorded in the sources."""
     sessions=[];sources=[];models=set()
     for row in entries:

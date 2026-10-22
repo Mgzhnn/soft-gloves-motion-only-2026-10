@@ -1,6 +1,6 @@
 """Build the scene records (table plane + hand landmarks) for a STORED perception run, without a GPU.
 
-A perception run before 16 October 2026 wrote packets, detections and diagnostics but no scene file. This tool refits the
+A perception run made before the scene record existed wrote packets, detections and diagnostics but no scene file. This tool refits the
 table plane from the recording's raw depth for every processed frame (same seeded RANSAC and settings as the run's object
 provider, seed = frame index) and lifts the three functional points per hand from the stored diagnostics (``point_xyz``),
 writing ``scene.jsonl`` + ``scene_provenance.json`` into a NEW directory. Nothing in the stored run is touched. New runs of

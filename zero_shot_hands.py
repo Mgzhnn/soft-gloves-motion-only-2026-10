@@ -9,7 +9,7 @@ human labels. Nothing here is accuracy in the reference's sense; it is the softw
 fine-tuned tracker must beat.
 
 Usage:
-    .venv-gpu/bin/python zero_shot_hands.py <frames_dir> <out_dir> --wilor <wilor_repo> [--hamer <hamer_repo>]
+    python zero_shot_hands.py <frames_dir> <out_dir> --wilor <wilor_repo> [--hamer <hamer_repo>]
         [--ledger labels.jsonl] [--every 1] [--conf 0.3]
 
 The MANO right-hand model must be present where each repo expects it (WiLoR: mano_data/MANO_RIGHT.pkl;

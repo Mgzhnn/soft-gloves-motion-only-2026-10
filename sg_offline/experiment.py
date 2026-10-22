@@ -12,9 +12,9 @@ from .training import label_ticks, fit_recorded, mean_log_loss, development_spli
 SEQUENCE_KINDS=("gru","transformer","tcn")
 # "gru" etc. keep their historical meaning (set representation); *_pooled / *_flat are the matched pairs.
 SEQUENCE_ARMS=SEQUENCE_KINDS+tuple(f"{k}_{r}" for k in SEQUENCE_KINDS for r in ("pooled","flat"))
-RULE_ARMS=("rules","rules_mc")  # hand-authored, never fitted; since 2 Oct 2026 a descriptive floor (they decide identically at every grid threshold)
-FLOOR_ARMS=RULE_ARMS+("rules_actions",)  # every unfitted arm; rules_actions (16 Oct 2026) is the per-action floor on the cue block (layout v2), outside CORE_ARMS
-SIMPLE_ARMS=("mi_learned","mc_learned")  #'s M-I / M-C as models fitted on the same labels and budget (2 Oct 2026)
+RULE_ARMS=("rules","rules_mc")  # hand-authored, never fitted; a descriptive floor (they decide identically at every grid threshold)
+FLOOR_ARMS=RULE_ARMS+("rules_actions",)  # every unfitted arm; rules_actions is the per-action floor on the cue block (layout v2), outside CORE_ARMS
+SIMPLE_ARMS=("mi_learned","mc_learned")  # M-I / M-C as models fitted on the same labels and budget
 COLLAPSE_ARMS=("kt_r_mean","kt_r_hard")  # KT-R's own readout on the collapsed hypothesis set: the mechanism controls
 CORE_ARMS=RULE_ARMS+SIMPLE_ARMS+("flat","kt_set","kt_r")+COLLAPSE_ARMS
 ARMS=CORE_ARMS+("rules_actions",)+SEQUENCE_ARMS
@@ -22,7 +22,7 @@ STRONGEST={"strongest_simple":SIMPLE_ARMS,"strongest_rule":RULE_ARMS}  # control
 
 
 def factory(name,seed=0,window=15,layout="v1"):
-    """One arm; ``layout`` (16 Oct 2026) sizes the learned readouts for the feature layout of the replay configuration."""
+    """One arm; ``layout`` sizes the learned readouts for the feature layout of the replay configuration."""
     if name=="rules":return SimpleRules()
     if name=="rules_mc":return SimpleRules(coordination=True)
     if name=="rules_actions":return ActionRules()
@@ -72,8 +72,8 @@ def score(model,sessions,config,include_outcomes=False,early_limit_s=0.):
     for session in sessions:
         if not session["packets"]:raise ValueError("empty packet stream")
         # The join is by participant/session id and by time. A ledger imported under another id, or converted with a
-        # wrong origin, used to join nothing: every request "missed", every no-request interval "clean", burden 0.0
-        # and no error (architecture review, 5 October 2026). Such a session is refused here, on every scoring path.
+        # wrong origin, would join nothing: every request "missed", every no-request interval "clean", burden 0.0
+        # and no error. Such a session is refused here, on every scoring path.
         identity=(session["packets"][0].participant_id,session["packets"][0].session_id)
         if any((o.participant_id,o.session_id)!=identity for o in session["opportunities"]):raise ValueError("ledger identity mismatch")
         rows=Replay(config,model,scenes=session.get("scenes")).run(session["packets"])
@@ -117,12 +117,12 @@ def _proposes(metrics):
 
 BURDEN_KEYS={"onsets":"onsets_per_hand_minute","ticks":"proposals_per_hand_minute"}
 # The declared threshold grid: a true operating point on the best action's score, dense where
-# rare-event probabilities live. The 23 Sep grid (.3-.9) is kept in older records.
+# rare-event probabilities live. The original grid (.3-.9) is kept in older records.
 THRESHOLD_GRID=(.02,.05,.1,.15,.2,.3,.4,.5,.6,.7,.8,.9)
 
 
 def fit_learned_arm(model,examples,dev_examples,steps,lr,regularization,split_id,synthetic_check=False,patience=None):
-    """Fit one learned arm the way every comparison fold does; shared with the one-person diagnostic (16 Oct 2026).
+    """Fit one learned arm the way every comparison fold does; shared with the one-person diagnostic.
 
     ``dev_examples``: labelled development examples for early stopping (the pass with the lowest development log loss
     is kept); ``[]`` when the development split has no labelled ticks (trained for all passes); ``None`` for a fixed
@@ -163,7 +163,7 @@ def fit_learned_arm(model,examples,dev_examples,steps,lr,regularization,split_id
 
 
 def risk_controlled_threshold(losses_by_person,thresholds,alpha,silent=()):
-    """Distribution-free selection of the operating point (16 Oct 2026, later): conformal risk control with a binary loss.
+    """Distribution-free selection of the operating point: conformal risk control with a binary loss.
 
     ``losses_by_person[person][k]`` is 1 when that calibration person's burden at ``thresholds[k]`` exceeded the budget,
     else 0; the loss is made monotone non-increasing in the threshold by taking the running maximum from the right (a
@@ -222,7 +222,7 @@ def risk_control_selection(model,calibration,config,thresholds,budget,burden_uni
 
 
 def development_selection(model,dev,config,thresholds,budget,burden_unit,early_limit_s=0.):
-    """Choose the reporting threshold on the development sessions; shared with the one-person diagnostic (16 Oct 2026).
+    """Choose the reporting threshold on the development sessions; shared with the one-person diagnostic.
 
     The proposing operating point within the declared unwanted-proposal budget (``burden_unit`` per hand-minute) with
     the highest development success; a silent point is never selected; without a feasible point the largest grid
@@ -261,19 +261,19 @@ def compare(sessions,arms=CORE_ARMS,seeds=(0,),steps=2000,lr=.01,
     """Threshold curves are descriptive; reporting threshold is fixed or chosen on development.
 
     Development selection uses the declared unwanted-proposal budget then request success. A development
-    operating point that never proposes anything is SILENT and is never selected (2 Oct 2026): a
-    controller that never acts trivially meets any burden budget, and the old rule then compared KT-R
+    operating point that never proposes anything is SILENT and is never selected: a
+    controller that never acts trivially meets any burden budget, and selecting it would compare KT-R
     with a control that could not succeed. If no proposing threshold meets the budget, the reporting
     point is explicitly infeasible (no test-data rescue) and that person is excluded from every contrast
     involving the arm, with the reason. With a development split, every learned arm is trained for up to
     ``steps`` passes over its training examples and keeps the pass with the lowest development log loss;
-    the same rule applies to every arm. The primary contrast follows accepted unless another
+    the same rule applies to every arm. The primary contrast is ``primary_contrast`` unless another
     recorded ``contrast`` is named. ``early_limit_s`` is the declared early-proposal tolerance of the
     endpoint (0 = strict). ``burden_unit`` says what the development budget counts: ``"onsets"`` (proposal
-    runs starting inside labelled no-request time, per hand-minute; the plan default accepted on 16 October
-    2026,) or ``"ticks"`` (every proposal tick, the 23 September reading, kept for older records). This
+    runs starting inside labelled no-request time, per hand-minute; the plan default) or ``"ticks"``
+    (every proposal tick, the original reading, kept for older records). This
     is a feasibility protocol, not calibration or evidence of the budget transferring to new people.
-    ``selection="risk_control"`` (16 Oct 2026, later) replaces the development choice by conformal risk control: the
+    ``selection="risk_control"`` replaces the development choice by conformal risk control: the
     training people of each outer fold are split into FIT people and the last ``calibration_people`` CALIBRATION people
     (default: half, rounded up, at least one); every learned arm is fitted on the fit people for all passes (no early
     stopping, so the calibration people stay unseen), each calibration person's out-of-sample burden curve becomes a
@@ -281,9 +281,9 @@ def compare(sessions,arms=CORE_ARMS,seeds=(0,),steps=2000,lr=.01,
     is at most ``risk_alpha``: a new person's burden then stays within the budget with probability at least 1 - alpha
     under exchangeability. Success is read at that point, never used to choose it. With few people the certifiable
     alpha is coarse (1 / (n + 1)); the record states it.
-    ``steps`` is the pass budget: the frozen rule fits every learned arm for all 2000 passes and
+    ``steps`` is the pass budget: the default rule fits every learned arm for all 2000 passes and
     keeps the pass with the lowest development log loss (``patience=None``). A ``patience`` value stops after that many
-    passes without a new best; it is not frozen because 50 cut the set-pooling control off on a plateau that every seed
+    passes without a new best; it is not the default because 50 cut the set-pooling control off on a plateau that every seed
     leaves by pass 400. The fixed protocol has no development loss and runs ``steps`` passes. The default grid is ``THRESHOLD_GRID`` and the supervisor's
     ``best_action_threshold`` rule makes every grid point an operating point (``config.decision_rule``).
     """
@@ -364,7 +364,7 @@ def compare(sessions,arms=CORE_ARMS,seeds=(0,),steps=2000,lr=.01,
                                    risk_alpha=risk_alpha,calibration_people=calibration_people,
                                    early_limit_s=early_limit_s,min_people_for_interval=min_people_for_interval,
                                    fixed_threshold=fixed_threshold,rate_window=config.rate_window,
-                                   replay_configuration=asdict(config),  # every replay setting, not only the rate window (5 Oct 2026)
+                                   replay_configuration=asdict(config),  # every replay setting, not only the rate window
                                    training="up to `steps` passes over the training examples for every learned arm; with a development split the pass with the lowest development log loss is kept and fitting stops after `patience` passes without a new best (None = all passes)",
                                    decision_rule=config.decision_rule,feature_layout=config.feature_layout,
                                    silent_points="a development operating point that never proposes is never selected and is reported as silent"),
@@ -374,7 +374,7 @@ def compare(sessions,arms=CORE_ARMS,seeds=(0,),steps=2000,lr=.01,
 CONTRAST_SPECS={
     "primary_contrast":(
         dict(role="primary",candidate="kt_r",control="strongest_simple",
-             label="KT-R minus the strongest development-selected simple learned control (M-I or M-C fitted on the same labels), per accepted primary contrast; controls changed from hand-authored rules to fitted models on 2 Oct 2026 (amendment proposed, awaiting confirmation)"),
+             label="KT-R minus the strongest development-selected simple learned control (M-I or M-C fitted on the same labels): the primary contrast; the controls are fitted models, not the original hand-authored rules"),
         dict(role="mechanism_mean_collapse",candidate="kt_r",control="kt_r_mean",
              label="KT-R minus its mean-collapse twin (the same 49x42 readout on the weighted-mean hypothesis): does keeping the competing hypotheses matter?"),
         dict(role="mechanism_hard_collapse",candidate="kt_r",control="kt_r_hard",
@@ -386,10 +386,10 @@ CONTRAST_SPECS={
         dict(role="secondary_representation",candidate="kt_set",control="flat",
              label="KT-SET minus full-information flat (representation diagnostic; not the primary contrast)"),
         dict(role="descriptive_floor",candidate="kt_r",control="strongest_rule",
-             label="KT-R minus the stronger hand-authored rule (the 23 Sep M-I/M-C rules): descriptive floor only; the two rules decide identically at every grid threshold")),
-    "rules_contrast":(  # the 23-24 Sep behaviour, kept so earlier reports can be reproduced
+             label="KT-R minus the stronger hand-authored rule (the original M-I/M-C rules): descriptive floor only; the two rules decide identically at every grid threshold")),
+    "rules_contrast":(  # the original behaviour, kept so earlier reports can be reproduced
         dict(role="primary",candidate="kt_r",control="strongest_rule",
-             label="KT-R minus the strongest development-selected simple learner (M-I or M-C), per accepted primary contrast (hand-authored rules; 23 Sep specification)"),
+             label="KT-R minus the strongest development-selected simple learner (M-I or M-C): the primary contrast of the original specification (hand-authored rules)"),
         dict(role="matched_control",candidate="kt_r",control="kt_set",
              label="KT-R minus KT-SET (matched set-pooling nonlinear control, primary contrast)"),
         dict(role="secondary_representation",candidate="kt_set",control="flat",
@@ -430,7 +430,7 @@ def contrasts_from_folds(folds,seeds,spec="primary_contrast",min_people_for_inte
     * A person whose development-selected reporting point missed the declared budget, or was silent on the
       development data, for either arm is excluded from that contrast and listed with the reason; it is never
       averaged in. Nothing is excluded on TEST outcomes; with a fixed threshold no such exclusion exists, so every
-      reporting point carries ``proposes_on_test`` and the contrast lists ``silent_arms_on_test`` (5 Oct 2026): a
+      reporting point carries ``proposes_on_test`` and the contrast lists ``silent_arms_on_test``: a
       difference against an arm that issued nothing is that arm's silence, not an advantage.
     * A "strongest_*" control is chosen per person from development success only; with a fixed threshold it
       cannot be chosen, and that contrast is then reported as not selectable. Ties go to the first (simpler) arm.

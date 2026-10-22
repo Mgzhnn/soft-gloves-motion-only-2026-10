@@ -9,11 +9,11 @@ from .state import CausalKinematics, RelativeGeometry, UnavailableKinetics, Disa
 from .inference import hypotheses, SimpleRules, hand_target_features, hand_action_cues, layout_of, cue
 from .scene import PlaneGeometry
 
-# The one place the build identifier lives. Before 5 October 2026 three driver scripts carried their own stale copies
-# ("/2", "/2", "/3") and stamped them into summaries beside traces stamped "/5".
-IMPLEMENTATION_VERSION = "motion-only-build/7"  # build 7 (16 Oct 2026): feature layouts, scene anchor, per-action gates
+# The one place the build identifier lives: driver scripts with their own copies let them go stale and stamped
+# them into summaries beside traces of a later build.
+IMPLEMENTATION_VERSION = "motion-only-build/7"  # build 7: feature layouts, scene anchor, per-action gates
 DECISION_RULES = ("best_action_threshold", "marginal_argmax")
-# Per-action observability gates of the common supervisor under layout v2 (16 Oct 2026). Each action is proposed only when
+# Per-action observability gates of the common supervisor under layout v2. Each action is proposed only when
 # the cue it needs is observable at this tick; the reason names
 # what was missing. Under layout v1 every non-grasp action keeps the build 1-6 reason, so stored traces reproduce.
 ACTION_GATE_REASONS = dict(FP="functional_points_unavailable", AR="held_object_relation_unavailable",
@@ -33,7 +33,7 @@ class Config:
     simulation_only: bool = True
     role_mode: str = "weak_speed"
     grasp_distance_limit_m: float | None = None
-    # Past pairs in the frame-invariant distance-rate estimate: 1 = one-frame secant (23 Sep behaviour),
+    # Past pairs in the frame-invariant distance-rate estimate: 1 = one-frame secant (original behaviour),
     # K > 1 = causal least-squares slope over up to K past pairs. One value per batch, chosen on development data.
     rate_window: int = 1
     # How the common supervisor turns a hand's marginal scores into a decision.
@@ -42,14 +42,14 @@ class Config:
     # data under the burden budget. "marginal_argmax" is the rule of builds 1-5: the most probable outcome (NQ
     # included) and a withheld tick when its score is below the threshold; name it to reproduce older traces.
     decision_rule: str = "best_action_threshold"
-    # Feature layout (16 Oct 2026): "v1" = the 42 columns of every earlier record (default, bit-identical); "v2" adds the
+    # Feature layout: "v1" = the 42 columns of every earlier record (default, bit-identical); "v2" adds the
     # per-action cue block from the scene anchor (table plane + landmarks). With "v2" the replay needs scene records.
     feature_layout: str = "v1"
     # Causal window of the plane-anchored rates (height rate, swept angle), in past pairs, like rate_window; and the
     # vertical-speed dead band under which a sign change does not count as a shake reversal (m/s).
     plane_window: int = 8
     reversal_deadband_mps: float = .1
-    # Temporal recursion on the readout's joint scores (16 Oct 2026, later; borrowed from the reference recursive filter,
+    # Temporal recursion on the readout's joint scores (borrowed from the reference recursive filter,
     # prior = last posterior): p_t = normalise(p_model,t * p_{t-1}^lambda), reset to the model's own scores after a gap
     # longer than max_velocity_gap_s or at a session start. 0 (default) = no recursion, bit-identical to every earlier
     # record. Applied to EVERY arm identically before the supervisor, so it cannot confound the contrast; a declared
@@ -133,7 +133,7 @@ class SimulationSupervisor:
         shared = sum(h.weight for h in bundle.hypotheses
                      if h.object_ids[0] is not None and h.object_ids[0] == h.object_ids[1])
         # A pair exists only when both hands are observed and fresh: a hand that cannot act is not a partner
-        # (before 5 October 2026 its raw choice alone could withhold the other hand's grasp under the pair gate).
+        # (otherwise its raw choice alone could withhold the other hand's grasp under the pair gate).
         usable = all(point.xyz is not None and packet.decision_s - point.stamp.acquired_s <= self.config.max_age_s for point in packet.hands)
         paired_grasp = usable and tuple(OUTCOMES[i] for i in choice) == ("G", "G")
         commands = []

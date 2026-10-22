@@ -1,3 +1,3 @@
-"""Clean offline research scaffold. No import or reuse of the rejected prototype."""
+"""Offline perception, readout, replay, supervisor and scoring package for the motion-only soft glove."""
 
 __version__ = "0.1.0"

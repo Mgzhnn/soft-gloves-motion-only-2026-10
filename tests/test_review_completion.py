@@ -1,9 +1,10 @@
-"""Review-completion fixes (2026-09-23): reproductions of the remaining review findings. Synthetic (N=0).
+"""Fixes to hand tracking, object points, the flat comparator, training, the contrasts and the recording tools:
+reproductions of known failures. Synthetic (N=0).
 
-Each test marked regression failed on the pre-fix snapshot (an earlier snapshot);
+Each test marked regression failed on the code before the fix;
 tests marked GUARD protect behaviour that was already correct; a RULE test pins a deliberate behaviour
-choice (it differs from the snapshot by design, not because the snapshot was wrong). No test sets or validates a
-perception threshold: those need labelled recordings and are listed in the issue ledger.
+choice (it differs from the earlier code by design, not because that code was wrong). No test sets or validates a
+perception threshold: those need labelled recordings.
 """
 from dataclasses import asdict, replace
 import json
@@ -122,7 +123,7 @@ def two_object_bundle(left_x, left_rate=None):
 
 def test_flat_input_is_continuous_when_the_hand_passes_between_two_objects():
     # Continuity means the change shrinks with the move; a slot-sorted input jumps by 2.0 however small
-    # the move (2026-09-24: criterion made scale-aware because the complete encoding has product terms).
+    # the move (the criterion is scale-aware because the complete encoding has product terms).
     change = lambda half: float(np.abs(flat_features(two_object_bundle(.1 - half)) - flat_features(two_object_bundle(.1 + half))).max())
     assert change(.00001) < .01                                   # a 0.02 mm move (before: 2.0)
     assert change(.0001) == pytest.approx(change(.001) / 10, rel=.3)  # ten times smaller move, ten times smaller change
@@ -250,7 +251,7 @@ def fold(arm, held, success, burden, selection="development", feasible=True, dev
 
 
 def test_the_primary_contrast_is_kt_r_against_the_strongest_simple_learner():
-    # 2 Oct 2026: the simple controls are the fitted M-I / M-C models (mi_learned / mc_learned); the hand-authored
+    # the simple controls are the fitted M-I / M-C models (mi_learned / mc_learned); the hand-authored
     # rules moved to a descriptive floor. The selection rule (development success) is unchanged.
     from sg_offline.experiment import contrasts_from_folds
     folds = [fold("kt_r", "p1", .8, 2.), fold("mi_learned", "p1", .5, 1., dev_success=.4), fold("mc_learned", "p1", .6, 1., dev_success=.7),
@@ -388,7 +389,7 @@ def test_a_declared_checkpoint_hash_is_verified_when_the_file_is_given(tmp_path)
 
 
 def test_a_box_below_the_confidence_floor_cannot_veto_a_confident_hand():
-    """Architecture review, 5 October 2026. The cross-class duplicate veto was computed before the confidence floor, so
+    """The cross-class duplicate veto used to be computed before the confidence floor, so
     a weak box nested in a confident hand of the other class removed that hand although the weak box itself could
     never be assigned. With `--confidence` lowered to find more hands this removed confident ones."""
     tracker = AnatomicalTracker(min_confidence=.3)

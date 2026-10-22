@@ -1,7 +1,7 @@
 {
   "schema": "sg-recording-script/1",
-  "status": "proposed_all_actions_clip_2026-10-16_awaiting_decision_not_a_validated_study_protocol",
-  "proposed_by": "agent, 16 October 2026 (all-action integration); recorded as a SECOND clip per person beside the accepted 270 s v1 clip, which stays the frozen pilot clip",
+  "status": "proposed_all_actions_clip_awaiting_decision_not_a_validated_study_protocol",
+  "proposed_by": "all-action extension of the recording protocol; recorded as a SECOND clip per person beside the accepted 270 s v1 clip, which stays the default clip",
   "purpose": "elicit every action of the six-action vocabulary with fixed attempt counts so that release, finger-press, axial rotation, normal translation (shake) and hard press (squeeze) get labelled opportunities; grasp and release counts per person are known in advance",
   "objects": {
     "cup": "the matte cup of the v1 clip (grasp, carry, place, shake)",
@@ -9,7 +9,7 @@
     "bottle": "a soft squeeze bottle or toothpaste tube, placed above the cup for the squeeze (hard press)",
     "box": "a stiff box or phone-sized block with a clearly marked top spot to press with the index finger (finger-press)"
   },
-  "label_rules_reference": "project notes, 'Label rules for the six actions - 16 October 2026 (proposed)'",
+  "label_rules_reference": "'Label rules for the six actions' (proposed; not part of this repository)",
   "duration_s": 180,
   "blocks": [
     {"start_s": 0, "end_s": 15, "instruction": "Rest both hands flat on the table, palms down; the cup, jar, bottle and box in view; 3-5 s of slow head turning with the hands still."},

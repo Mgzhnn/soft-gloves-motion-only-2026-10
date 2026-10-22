@@ -194,7 +194,7 @@ def test_handover_passes_recently_seen_objects_and_drops_long_lost_ones(tmp_path
 
 
 class StrictFakeSegmenter(FakeSegmenter):
-    """Like the real SAM 2 video predictor (checked on CPU with sam2.1_hiera_small on 5 October 2026): propagating a
+    """Like the real SAM 2 video predictor (checked on CPU with sam2.1_hiera_small): propagating a
     chunk that received neither a point prompt nor a hand-over mask raises instead of returning empty masks."""
 
     def segment_chunk(self, frames_dir, prompts, handover):
@@ -204,7 +204,7 @@ class StrictFakeSegmenter(FakeSegmenter):
 
 
 def test_segmentation_completes_when_no_object_can_be_handed_to_the_next_chunk(tmp_path):
-    """Architecture review, 5 October 2026 (ledger R35): with every object out of view for longer than the lookback at
+    """With every object out of view for longer than the lookback at
     a chunk boundary, the driver called the segmenter with an empty hand-over; the real predictor then raised and the
     run stopped with masks on disk but no objects.json or provenance. The objects stay lost (the documented limit),
     so the remaining frames are written as empty masks and the run is recorded."""
@@ -233,7 +233,7 @@ def test_segmentation_completes_when_no_object_can_be_handed_to_the_next_chunk(t
 
 
 def test_overwrite_removes_the_previous_mask_set_before_segmenting(tmp_path):
-    """Architecture review, 5 October 2026: ``overwrite=True`` only skipped the not-empty refusal, so masks of an
+    """``overwrite=True`` used to skip only the not-empty refusal, so masks of an
     earlier run stayed on disk and were read through the NEW label map (frames before a later prompt frame showed
     objects the new run never segmented, possibly under swapped names). The driver now clears its own files first,
     as both recording adapters do; other files in the folder are left alone."""
@@ -364,7 +364,7 @@ def test_the_plane_and_mask_providers_honour_the_frames_invalid_depth_marker(tmp
 
 
 def test_GUARD_the_mask_provider_reports_a_missing_table_plane_for_every_object(tmp_path):
-    """Pinned after the test audit of 5 October 2026: this branch ran in no test; without it a frame in which the camera
+    """This branch ran in no test; without it a frame in which the camera
     leaves the table would stop a perception run with an AttributeError."""
     depth, box, second, arm = two_box_scene()
     label = np.zeros(depth.shape, np.uint8); label[box] = 1

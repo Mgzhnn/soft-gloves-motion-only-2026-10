@@ -1,12 +1,12 @@
 """Bounded RGB-D -> hand/object observations -> packets -> simulation trace (no labels).
 
 Object providers, one per run, recorded in the summary and provenance:
-  colour  the 23 September colour-region stand-in (``--objects targets.json``; default green cup / red marker);
+  colour  the original colour-region stand-in (``--objects targets.json``; default green cup / red marker);
   plane   RANSAC table plane + clusters above it (the matched simple comparator; identities object_1, object_2 ...);
   masks   SAM 2 masks precomputed by ``segment_objects.py`` (``--masks DIR``) + table-plane geometry.
 All arms of a comparison must use the same provider; the choice is a batch setting.
 
-Timing policy (2 October 2026). ``serial`` (the 23 Sep behaviour) simulates one worker whose frames queue
+Timing policy. ``serial`` (the original behaviour) simulates one worker whose frames queue
 while it is busy: at 30 fps with ~40 ms per frame the queue grows without bound and the supervisor withholds
 almost every tick as stale. ``drop_while_busy`` simulates one worker that skips frames arriving while it is busy
 (latest-frame processing). ``fixed_latency`` processes every selected frame and stamps availability at the frame
@@ -123,7 +123,7 @@ def build_object_provider(kind, calibration, *, objects_file=None, masks_dir=Non
 
     With ``recording`` (the RGBDRecording being processed) a mask set is accepted only if it was segmented from
     that recording: same participant and session in ``objects.json`` and, when the segmentation provenance is
-    present, the same manifest hash. Before 5 October 2026 another session's masks were consumed without a word."""
+    present, the same manifest hash. Otherwise another session's masks would be consumed without a word."""
     if kind not in OBJECT_PROVIDERS:
         raise ValueError("unknown object provider")
     settings = PlaneSettings(**json.loads(Path(plane_settings).read_text())) if plane_settings else PlaneSettings()
@@ -181,7 +181,7 @@ def main(argv=None):
     ap.add_argument("--objects", type=Path, help="colour provider: JSON of colour targets {identity: [[[H,S,V],[H,S,V]], ...]}")
     ap.add_argument("--masks", type=Path, help="masks provider: output directory of segment_objects.py")
     ap.add_argument("--plane-settings", type=Path, help="plane/masks providers: JSON with PlaneSettings fields (defaults otherwise)")
-    ap.add_argument("--rate-window", type=int, default=1, help="replay Config.rate_window: 1 = one-frame secant (default); K > 1 = causal least-squares slope over up to K past pairs (batch setting, 7 Oct 2026)")
+    ap.add_argument("--rate-window", type=int, default=1, help="replay Config.rate_window: 1 = one-frame secant (default); K > 1 = causal least-squares slope over up to K past pairs (batch setting)")
     a = ap.parse_args(argv)
     if a.start < 0 or a.max_frames < 1 or not 0 < a.confidence < 1 or a.decimate < 1 or a.fixed_latency_s < 0 or a.rate_window < 1:
         ap.error("invalid bounds")
@@ -234,7 +234,7 @@ def main(argv=None):
     sidecar = a.manifest.resolve().parent / "adapter_provenance.json"
     extraction = json.loads(sidecar.read_text()) if sidecar.exists() else {}
     packets = []; detections = []; diagnostics = []; scenes = []; previous_done = -1.
-    # The scene record (16 Oct 2026): the table plane of every processed frame (the object providers' own fit for plane/masks,
+    # The scene record: the table plane of every processed frame (the object providers' own fit for plane/masks,
     # a separate fit with the same settings for colour) and the lifted functional points per hand, written beside the packets.
     plane_observer = TablePlaneObserver(recording.calibration, PlaneSettings(**json.loads(a.plane_settings.read_text())) if a.plane_settings else PlaneSettings())
     decimated = dropped_busy = 0; truncated = False; object_seconds = []
@@ -245,8 +245,8 @@ def main(argv=None):
         if (index - a.start) % a.decimate:
             decimated += 1; continue
         if len(packets) >= a.max_frames:
-            # Only a frame that WOULD have been selected is a sign of truncation; before 5 October 2026 any remaining
-            # frame set the flag, also one that decimation skips anyway.
+            # Only a frame that WOULD have been selected is a sign of truncation; a remaining frame that
+            # decimation skips anyway is not.
             truncated = True; break
         if a.queue_policy == "drop_while_busy" and frame.available_s < previous_done:
             dropped_busy += 1; continue  # the worker was still busy when this frame arrived

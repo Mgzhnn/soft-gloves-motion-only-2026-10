@@ -1,4 +1,4 @@
-"""Ledger loaders and the four hand-checks experiment_matrix.md prescribes for the ledger join."""
+"""Ledger loaders and the four hand-checks of the ledger join."""
 import copy
 import json
 
@@ -137,7 +137,7 @@ def test_clock_shift_lands_on_trace_seconds(tmp_path):
     assert (op.start_s, op.end_s) == (5., 6.)
 
 
-# ---- the four ledger-join hand-checks (experiment_matrix.md, "Primary endpoints and denominator contract")
+# ---- the four ledger-join hand-checks (primary endpoints and denominator contract)
 
 def _rows():
     return Replay().run(scenarios())

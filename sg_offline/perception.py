@@ -87,7 +87,7 @@ class HandDetection:
     points: dict  # three names -> (u,v) or None; never fill missing points with a different definition
     model: str
     definition: str = "three_functional_points"
-    extra_points: dict = field(default_factory=dict)  # EXTRA_LANDMARK_NAMES -> (u,v) or None (fingertips, 16 Oct 2026); optional
+    extra_points: dict = field(default_factory=dict)  # EXTRA_LANDMARK_NAMES -> (u,v) or None (fingertips); optional
 
     def __post_init__(self):
         if len(self.box) != 4 or not np.isfinite(self.box).all() or self.box[2] <= self.box[0] or self.box[3] <= self.box[1]:
@@ -121,8 +121,8 @@ class AnatomicalTracker:
         self.last = {s: value for s, value in self.last.items() if time_s-value[0] <= self.max_gap_s}
         # Duplicates are not two hands. Cross-class duplicates are identity-ambiguous; overlap is
         # measured against the smaller box so a box nested inside another counts as a duplicate.
-        # Only detections at or above the confidence floor take part: before 5 October 2026 a box too weak to be a
-        # hand could still veto a confident hand of the other class it overlapped.
+        # Only detections at or above the confidence floor take part: otherwise a box too weak to be a
+        # hand could veto a confident hand of the other class it overlapped.
         strong = [k for k, d in enumerate(detections) if d.confidence >= self.min_confidence]
         bad = {i for i in strong for j in strong
                if i != j and box_overlap_of_smaller(detections[i].box, detections[j].box) > .5 and detections[i].side != detections[j].side}
@@ -175,9 +175,9 @@ DEFAULT_COLOUR_TARGETS = {
 class ColourObjects:
     """Declared matte colour targets. Requires a controlled scene and object-specific validation.
 
-    ``targets`` maps an object identity to one or more HSV ranges (default: the 23 Sep green cup and red
+    ``targets`` maps an object identity to one or more HSV ranges (default: the original green cup and red
     marker). Ranges are batch settings chosen once on a development clip and recorded with the run
-    (``ColourObjects.from_json``); they are never tuned per clip to improve a result (2 Oct 2026)."""
+    (``ColourObjects.from_json``); they are never tuned per clip to improve a result."""
     def __init__(self, min_area=100, targets=None):
         self.min_area = min_area
         self.targets = {str(k): [tuple(map(tuple, r)) for r in v] for k, v in (targets or DEFAULT_COLOUR_TARGETS).items()}
@@ -251,7 +251,7 @@ def packet_from_detections(frame, assigned, object_pixels, *, participant_id, se
 
     Availability includes measured inference completion; acquisition remains that of the camera.
     Objects may be given as pixels (legacy), ``(pixel, reason)`` tuples from ``ColourObjects.locate``, or
-    ``ObjectObservation`` records whose metric ``xyz`` is used directly (2026-10-05); when ``object_details``
+    ``ObjectObservation`` records whose metric ``xyz`` is used directly; when ``object_details``
     is a dict it receives each ObjectObservation's details for the diagnostics. An object's name is whatever
     the provider declared; a colour region or mask never silently becomes a different physical object.
     """
@@ -277,7 +277,7 @@ def packet_from_detections(frame, assigned, object_pixels, *, participant_id, se
                 if q.xyz is not None:
                     lifted.append(q.xyz)
             for name, uv in detection.extra_points.items():
-                # fingertips (16 Oct 2026): lifted the same way, kept in the diagnostics and the scene record, never in the packet
+                # fingertips: lifted the same way, kept in the diagnostics and the scene record, never in the packet
                 pixel = None if uv is None else tuple(int(round(v)) for v in uv)
                 if pixel is not None and not (detection.box[0] <= pixel[0] <= detection.box[2] and detection.box[1] <= pixel[1] <= detection.box[3]):
                     pixel = None

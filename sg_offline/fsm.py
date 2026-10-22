@@ -1,6 +1,6 @@
 """Simulated glove supervisor: a per-hand finite state machine that turns proposals into accepted glove commands.
 
-Simulation only (16 October 2026). No hardware API is called here: the output is a list
+Simulation only. No hardware API is called here: the output is a list
 of ``Command`` records that a glove interface would consume, and a per-tick state trace. The structure follows the
 reference state machine (Hand Open -> Close Hand -> Tighten Finger -> Close Hand -> Hand Open; Hand Open -> Extend Index
 -> Hand Open) and its execution conditions (contact-type actions execute when the hand is nearly still; motion-type
@@ -10,7 +10,7 @@ state, a veto input that opens the glove at once, and a hold rule: when the hand
 state and never moves (an open glove stays open, a closed glove keeps holding) until a confirmed proposal or a veto.
 
 Every duration below is a DECLARED placeholder, not a measurement: the glove's closure and opening times are unknown
-(no measurement on 16 October 2026) and must be measured on the powered glove before any online use. The flexion targets are
+(not yet measured) and must be measured on the powered glove before any online use. The flexion targets are
 the reference approximate stroke fractions (Extend Index ~0, Hand Open ~0.25, Close Hand ~0.55, Tighten ~0.8 of full
 stroke, object-size adjusted) and are placeholders for the same reason.
 """

@@ -27,7 +27,7 @@ def _tracker_side(lab, side, out, tracker, errors):
         if out is None:
             tracker["correctly_empty_out_of_frame"] += 1
         elif other.box is not None and box_iou(out["box"], other.box) >= MATCH_MIN_IOU:
-            # The visible hand emitted under the absent side's name. Its own counter (5 Oct 2026): this side is not
+            # The visible hand emitted under the absent side's name. Its own counter: this side is not
             # in ``reference_sides``, so sharing ``on_other_reference_hand`` broke both groups' sums.
             tracker["out_of_frame_side_emitted_on_other_reference_hand"] += 1
         else:

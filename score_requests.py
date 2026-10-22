@@ -8,7 +8,7 @@ accounting, the unwanted-proposal exposure of the labelled no-request time, the 
 person: no comparison, no training, no interval. ``run_comparison.py`` remains the multi-person route.
 usage: score_requests.py RECORDING_JSON RUN_DIR LEDGER_JSON OUT_JSON [--early-limit-s 0] [--scope TEXT]
                          [--admitted-actions G[,R,...]] [--endpoint proposals|accepted_commands]
-16 Oct 2026: ``--admitted-actions`` names the actions scored as requests (default G, the frozen pilot endpoint; an action not
+``--admitted-actions`` names the actions scored as requests (default G, the primary endpoint; an action not
 named stays unsupported and its hand unscored, never no-request). ``--endpoint accepted_commands`` scores the run's
 ``commands.jsonl`` (written by ``replay_packets.py --fsm``) instead of the proposals: the accepted-command SECONDARY endpoint.
 """

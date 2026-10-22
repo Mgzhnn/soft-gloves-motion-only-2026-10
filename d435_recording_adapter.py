@@ -88,7 +88,7 @@ EXTRACTION_FILE_PATTERNS = ("rgb_*.npy", "depth_*.npy", "recording.json", "adapt
 
 def _clear_previous_extraction(out_dir: Path) -> list[str]:
     """Remove the files an earlier extraction wrote, so an interrupted ``--overwrite`` run cannot leave
-    frames of two recordings side by side under one manifest (review C6, 2 Oct 2026). Only the adapter's
+    frames of two recordings side by side under one manifest. Only the adapter's
     own file patterns are touched; anything else in the directory is left alone."""
     removed = []
     for pattern in EXTRACTION_FILE_PATTERNS:
