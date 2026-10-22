@@ -4,7 +4,9 @@ An offline Python pipeline for an assistive soft glove. It reads RGB-D recording
 
 The glove itself is a cable-driven soft hand with actuator housings on the wrist. This repository contains the software only. It runs in simulation and offline evaluation, and it does not command the hardware.
 
-![Soft glove prototype: a leather-palm glove with cables to the fingertips and two actuator housings on the wrist](docs/images/glove_prototype.jpg)
+![Head-camera RGB-D frame pair: colour (left) and depth (right), with gloves and a bottle on a table](docs/images/rgbd_result.jpg)
+
+An RGB-D frame pair from the head-camera test: colour (left) and depth (right).
 
 ## How it works
 
@@ -76,7 +78,7 @@ No versions are pinned in this snapshot.
 | `recording_script*.json` | Recording timelines read by `timed_recording.py` |
 | `fsm_still_contact.json` | Example supervisor configuration |
 | `rgbd_contract.md` | Recording manifest contract |
-| `docs/images/` | Photo used in this README |
+| `docs/images/` | Example image used in this README |
 
 ## License
 
