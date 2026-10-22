@@ -4,9 +4,9 @@ An offline Python pipeline for an assistive soft glove. It reads RGB-D recording
 
 The glove itself is a cable-driven soft hand with actuator housings on the wrist. This repository contains the software only. It runs in simulation and offline evaluation, and it does not command the hardware.
 
-![Head-camera RGB-D frame pair: colour (left) and depth (right), with gloves and a bottle on a table](docs/images/rgbd_result.jpg)
+![Detector box on the gloved hand and the bottle, with the detection confidence](docs/images/detector_boxes.jpg)
 
-An RGB-D frame pair from the head-camera test: colour (left) and depth (right).
+Detector output from the bench RGB-D test: a box on the gloved hand and the bottle, with the detection confidence (0.69). The frame is cropped to the glove and object.
 
 ## How it works
 
