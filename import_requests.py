@@ -49,7 +49,7 @@ def convert(rows, participant, session, annotator, clock, duration):
         if abs(start-previous) > TOL:
             raise ValueError("rows must partition the timeline without overlap or gaps; label unknown time explicitly")
         # A start within the tolerance of the previous end is written as exactly that end: the scorer compares
-        # interval bounds exactly, and rows 0-2.0000005 / 2.0-4 were imported and then refused there (5 Oct 2026).
+        # interval bounds exactly, and rows 0-2.0000005 / 2.0-4 would be imported and then refused there.
         declared_start, start = start, previous
         if end <= start:
             raise ValueError("rows must partition the timeline without overlap or gaps; label unknown time explicitly")
@@ -99,7 +99,7 @@ def convert(rows, participant, session, annotator, clock, duration):
             annotator=annotator, prefix_only=False, note=row.get("note", "") or "")
         if any(request_ids.values()):
             entry["request_ids"] = request_ids
-        if "row_author" in columns:  # who wrote this row (16 Oct 2026); absent column = output unchanged
+        if "row_author" in columns:  # who wrote this row; absent column = output unchanged
             author = (row["row_author"] or "").strip()
             if author not in ROW_AUTHORS:
                 raise ValueError(f"row {i}: row_author must be one of {ROW_AUTHORS}, got {author!r}")

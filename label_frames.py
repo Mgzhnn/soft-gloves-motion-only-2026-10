@@ -1,7 +1,7 @@
 """Click-to-label tool for the three functional points per hand on converted RGB-D frames.
 
 Writes an ``sg-landmark-ledger/1`` JSONL file (see ``sg_offline/ledger.py``). Labels are human
-references for M0 (tracker coverage, identity and error); they never enter a runtime packet.
+references for the perception evaluation (tracker coverage, identity and error); they never enter a runtime packet.
 
 Usage (GUI):
     python label_frames.py data/<clip>_sg/recording.json labels.jsonl --annotator <name> --pass unmarked --every 5
@@ -80,7 +80,7 @@ class Session:
         self.marker_pass = marker_pass
         self.labels = {l.key(): l for l in read_landmark_ledger(out_path)} if out_path.exists() else {}
         # Session-relative zero = availability of the first frame (ledger.session_origin_s), so the time shown
-        # with each frame is the number an annotator writes into the request timeline CSV (2 Oct 2026).
+        # with each frame is the number an annotator writes into the request timeline CSV.
         self.origin_s, self.clock = session_origin_s(recording.path)
 
         if any((l.annotator, l.marker_pass) != (annotator, marker_pass) for l in self.labels.values()):

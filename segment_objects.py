@@ -1,12 +1,12 @@
 """Segment the objects of one recording with SAM 2 (video predictor), offline and causal, in chunks.
 
-Proposed (5 October 2026). Input: an `sg-rgbd-recording/1` manifest and a prompts file; output: one
+Input: an `sg-rgbd-recording/1` manifest and a prompts file; output: one
 uint8 label image per source frame (0 = background, k = object k) under ``masks/``, ``objects.json`` naming
 the labels, and ``segmentation_provenance.json`` (checkpoint sha256, sam2 commit, config, prompts, chunking,
 timing, per-object mask-area summary, frames where an object was lost).
 
 Causality: prompts are given on one frame and propagated FORWARD only; a frame's mask depends on earlier
-frames and the prompt, never on later ones (checked on 5 October 2026: a 60-frame run and a 30-frame prefix give
+frames and the prompt, never on later ones (checked: a 60-frame run and a 30-frame prefix give
 identical masks on the shared frames). Memory: frames are processed in chunks; each chunk starts on the last
 frame of the previous one and is prompted with that frame's predicted masks (mask hand-over), so a 2,000-frame
 clip never needs more than one chunk of frames on the GPU.
@@ -58,8 +58,8 @@ def chunk_ranges(n_frames: int, start: int, chunk: int):
 
 
 def _write_image(path, image, params=None) -> None:
-    """``cv2.imwrite`` reports a failed write (full disk, permissions) only by returning False; before 5 October 2026
-    that was ignored and an incomplete mask set was declared complete."""
+    """``cv2.imwrite`` reports a failed write (full disk, permissions) only by returning False; ignoring
+    that would declare an incomplete mask set complete."""
     import cv2
     ok = cv2.imwrite(str(path), image, params) if params else cv2.imwrite(str(path), image)
     if not ok:
@@ -125,7 +125,7 @@ def run_segmentation(recording: RGBDRecording, out_dir: Path, prompts: dict, seg
     if handover_lookback < 0:
         raise ValueError("handover_lookback must be nonnegative")
     # Overwrite means replace: masks of an earlier run must not survive under the new label map (frames before a
-    # later prompt frame would otherwise show objects this run never segmented; found 5 October 2026).
+    # later prompt frame would otherwise show objects this run never segmented).
     replaced = _clear_previous_segmentation(out_dir) if overwrite and out_dir.exists() else 0
     started_utc = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")  # before any work, not when the record is assembled
     masks_dir = out_dir / "masks"; masks_dir.mkdir(parents=True, exist_ok=True)
@@ -145,7 +145,7 @@ def run_segmentation(recording: RGBDRecording, out_dir: Path, prompts: dict, seg
         if not is_first and not handover:
             # Nothing can be handed over: every object has been unseen for longer than the lookback. The SAM 2 video
             # predictor refuses to propagate without a prompt ("No input points or masks are provided for any object"),
-            # which used to abort the run here and leave masks without objects.json (found 5 October 2026). The objects
+            # which would abort the run here and leave masks without objects.json. The objects
             # stay lost, as the limitation below states, so the remaining frames get empty label images and the run
             # completes with its records. The hand-over frame itself was written by the previous chunk.
             for source in range(first + 1, last):
@@ -173,7 +173,7 @@ def run_segmentation(recording: RGBDRecording, out_dir: Path, prompts: dict, seg
                 if m is not None and m.shape == label.shape and m.any():
                     label[m & (label == 0)] = ids[name]
             # Areas, "seen" and the hand-over mask come from the label image as written: masks listed later cannot
-            # overwrite earlier ones, so an overlapped object's raw mask said more than the file holds (5 Oct 2026).
+            # overwrite earlier ones, so an overlapped object's raw mask would say more than the file holds.
             for name in names:
                 visible = label == ids[name]
                 area = int(visible.sum())

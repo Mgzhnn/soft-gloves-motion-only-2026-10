@@ -1,4 +1,4 @@
-"""The training-protocol settings of (16 October 2026): the supervisor's best-action operating-point rule, the declared
+"""The training-protocol settings: the supervisor's best-action operating-point rule, the declared
 threshold grid, and patience-based stopping with a pass cap. Synthetic, participant N=0."""
 import inspect
 

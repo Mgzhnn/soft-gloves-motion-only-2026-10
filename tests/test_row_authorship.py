@@ -1,10 +1,9 @@
 """Per-row authorship of request timelines.
 
 The importer stamped one annotator and the provenance ``human_timeline_csv_retrospective`` on every row, so a timeline
-whose rows were mostly agent drafts accepted by the annotator read as entirely human-written (88 of 98 rows of the
-five stored ledgers). An optional ``row_author`` column now records who wrote each row; without the column the
-importer's output is unchanged, so the stored ledgers and every record that hashes them stay valid. Software only,
-participant N = 0.
+whose rows were mostly agent drafts accepted by the annotator read as entirely human-written. An optional
+``row_author`` column now records who wrote each row; without the column the importer's output is unchanged, so
+existing ledgers and every record that hashes them stay valid. Software only, participant N = 0.
 """
 import csv
 import json

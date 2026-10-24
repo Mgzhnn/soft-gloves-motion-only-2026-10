@@ -1,9 +1,9 @@
-"""Group A fixes (2026-09-23). Each test reproduces a reviewed failure; all fixtures are synthetic (N=0).
+"""Fixes for request scoring, the timeline importer, perception evaluation, label export, the comparison and the
+temporal models. Each test reproduces a known failure; all fixtures are synthetic (N=0).
 
-25 of the 29 items here failed on the pre-fix snapshot (the run folder
-2026-09-23_before_group_a) and pass on the fixed code; four pass there by design (one checks unchanged behaviour,
-three guard behaviour that was already correct), as project notes records (correction 5 October 2026: this line
-said "every test"). Tests needing torch or pyrealsense2 skip without them.
+25 of the 29 items here failed on the code before these fixes and pass on the fixed code; four pass there by design
+(one checks unchanged behaviour, three guard behaviour that was already correct). Tests needing torch or pyrealsense2
+skip without them.
 """
 from dataclasses import asdict, replace
 import json
@@ -217,7 +217,7 @@ def test_a_swap_is_counted_when_the_named_hand_is_out_of_frame():
     row = dict(participant_id="p", session_id="s", frame_id="frame", detections=[],
                assigned=dict(left=detection((50, 0, 70, 20), "left"), right=None))  # the right glove emitted as "left"
     counts = evaluate([row], labels)["tracker"]["counts"]
-    # since 5 October 2026 the swap onto an absent side has its own counter, so each group sums to its denominator
+    # the swap onto an absent side has its own counter, so each group sums to its denominator
     assert counts["out_of_frame_side_emitted_on_other_reference_hand"] == 1 and "emitted_while_reference_out_of_frame" not in counts
     assert "on_other_reference_hand" not in counts
 
@@ -302,7 +302,7 @@ def test_comparison_runs_mc_rules_and_reports_burden_outcomes_and_cadence():
     result = compare(synthetic_sessions(), arms=("rules", "rules_mc", "flat", "kt_set"), steps=5, thresholds=(.6,), synthetic_check=True)
     mc = [f for f in result["folds"] if f["arm"] == "rules_mc"]
     assert len(mc) == 2 and all(f["steps"] == 0 and f["loss_before"] is None for f in mc)
-    # 2026-09-23 review completion: the representation contrast is now one of the-named contrasts.
+    # the representation contrast is one of the named contrasts.
     contrast = [c for c in result["paired_contrasts"] if c["role"] == "secondary_representation"][0]
     assert "burden_difference_proposals_per_hand_minute" in contrast
     assert contrast["status"] == "descriptive_fixed_threshold"  # fixed threshold: not tuned
@@ -372,7 +372,7 @@ def test_recorded_training_refuses_windows_built_for_another_length():
     assert "reset_gap_s=0.25" in model.fit_provenance
 
 
-# ---- temporal tests that bite: padding and newest-tick truncation (review finding 21) ------------
+# ---- temporal tests that bite: padding and newest-tick truncation --------------------------------
 
 @pytest.mark.parametrize("kind", ("gru", "transformer", "tcn"))
 def test_padding_to_a_longer_window_does_not_change_the_prediction(kind):

@@ -1,6 +1,6 @@
-"""Regressions from the review of 16 October 2026 (software, participant N = 0).
+"""Regressions in fit_diagnostic.py and label_frames_web.py (software, participant N = 0).
 
-1. fit_diagnostic.py read only the specification keys it knew and silently ignored the rest, so a misspelt frozen
+1. fit_diagnostic.py read only the specification keys it knew and silently ignored the rest, so a misspelt declared
    setting (``early_limit`` for ``early_limit_s``), the run_comparison-style ``config`` block or ``threshold_grid`` ran
    with the code defaults (strict tolerance, best_action_threshold, default grid) and recorded them as if declared.
 2. label_frames_web.py offered ``--pass unmarked|marked``; the ledger accepts ``unmarked``, ``marker_on`` and

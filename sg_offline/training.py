@@ -1,15 +1,15 @@
 """Training the small readouts on RECORDED data with ledger labels, under person-level splits.
 
-This is the M1 training path. It is deliberately separate from ``fit_synthetic``:
+This is the recorded-data training path. It is deliberately separate from ``fit_synthetic``:
 
 * labels come only from an opportunity ledger (``ledger.py``), never from packets;
 * labels are per hand and use half-open intervals plus declared hand windows; unknown
   hands are marginalised, alternatives are summed, and unknown is never changed to NQ;
 * every example carries participant/session identity, so splits are by person and all of a
-  person's material stays on one side (experiment_matrix.md);
+  person's material stays on one side;
 * the fitted model records its provenance (source kinds, participants, example count, split id).
 
-Nothing here claims the labels are correct or the fit generalises; those are M0/M1 results.
+Nothing here claims the labels are correct or the fit generalises; those are results of an evaluation on real data.
 """
 from __future__ import annotations
 

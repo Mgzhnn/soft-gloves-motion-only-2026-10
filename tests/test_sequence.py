@@ -40,6 +40,11 @@ def test_predict_is_normalised_and_causal(kind, retain):
     stream = [b for _, b in bundles_for(scenarios())]
     p_prefix = model.predict_window(tuple(stream[:4]))
     assert np.allclose(p_prefix, p)
+    moved = [replace(k, hands=tuple(replace(h, xyz=None if h.xyz is None else (h.xyz[0] + .3, h.xyz[1], h.xyz[2])) for h in k.hands))
+             for k in scenarios()[4:]]
+    altered = [w for _, w in build_windows(bundles_for(scenarios()[:4] + moved), 5)]
+    assert not np.allclose(model.predict_window(altered[-1]), model.predict_window(wins[-1]))   # the change is visible later
+    assert np.allclose(model.predict_window(altered[3]), p)                                     # but not at tick 3
     # stateful path equals the stateless window path tick by tick
     model.reset()
     for i, b in enumerate(stream[:4]):

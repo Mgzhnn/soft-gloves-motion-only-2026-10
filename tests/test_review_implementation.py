@@ -1,6 +1,7 @@
-"""Implementation of the 28 September 2026 independent strict review (2 October 2026). Synthetic fixtures, N=0.
+"""Early first commands, learned simple controls, silent operating points, intervals, rate windows and run provenance.
+Synthetic fixtures, N=0.
 
-regression tests fail on an earlier snapshot (or could not run there because the
+Regression tests fail on the earlier code (or could not run there because the
 feature did not exist); GUARD tests hold on both; RULE tests pin a deliberate behaviour choice. Nothing here
 measures accuracy on gloved hands or validates a threshold.
 """
@@ -49,7 +50,7 @@ def motion_bundles():
     return [b for _, b in bundles_for(scenarios())]
 
 
-# ---- the early first command (review B3 / COD-4 / EVA-1) ------------------------------------------
+# ---- the early first command ----------------------------------------------------------------------
 
 def test_a_proposal_run_that_began_before_the_request_is_early_not_success():
     rows = trace(TIMES, right_proposals=ticks_from(2.0))  # proposing G continuously from 2.0 s; the request starts at 5.0 s
@@ -117,7 +118,7 @@ def test_onsets_distinguish_one_sustained_burst_from_seven_separate_ones():
         dict(start_s=.4, end_s=.4, outcome="R", ticks=1)]
 
 
-# ---- learned simple controls and collapse twins (review B1 / B2 / COD-1 / ARC-1 / ARC-2) ----------
+# ---- learned simple controls and collapse twins ---------------------------------------------------
 
 def test_RULE_the_hand_authored_rules_decide_identically_at_every_grid_threshold():
     packets = scenarios(); disagreements = 0; scores = set()
@@ -212,10 +213,10 @@ def test_GUARD_experiment_arms_include_the_new_controls_and_the_old_specificatio
     assert SIMPLE_ARMS == ("mi_learned", "mc_learned") and RULE_ARMS == ("rules", "rules_mc")
     assert factory("mi_learned").cross_hand is False and factory("mc_learned").coupling is True
     assert [e["role"] for e in CONTRAST_SPECS["primary_contrast"]][:3] == ["primary", "mechanism_mean_collapse", "mechanism_hard_collapse"]
-    assert CONTRAST_SPECS["rules_contrast"][0]["control"] == "strongest_rule"  # the 23 Sep primary, reproducible on request
+    assert CONTRAST_SPECS["rules_contrast"][0]["control"] == "strongest_rule"  # the original primary, reproducible on request
 
 
-# ---- silent operating points and the development selection (review B1 / COD-1) --------------------
+# ---- silent operating points and the development selection ----------------------------------------
 
 def people_sessions(people=("p1", "p2", "p3")):
     sessions = []
@@ -271,7 +272,7 @@ def test_compare_runs_the_learned_controls_and_collapse_arms_with_mechanism_cont
     assert result["schema"] == "sg-offline-comparison/3" and result["configuration"]["early_limit_s"] == 0.
 
 
-# ---- participant-level interval (review EVA-2 / B12) ----------------------------------------------
+# ---- participant-level interval -------------------------------------------------------------------
 
 def test_paired_interval_appears_only_from_five_people():
     few = paired_interval([.1, .2])
@@ -285,7 +286,7 @@ def test_paired_interval_appears_only_from_five_people():
         t_975(0)
 
 
-# ---- least-squares distance rate (review B10 / ARC-3) --------------------------------------------
+# ---- least-squares distance rate -----------------------------------------------------------------
 
 def _pk(t, hand_x, obj_x=0., noise=0.):
     s = lambda name: Stamp(f"{name}@{t}", t, t, Source.RECORDED, "cam")
@@ -328,7 +329,7 @@ def test_the_rate_window_is_a_replay_setting_recorded_in_the_trace_and_reset_by_
     assert all(r["relative_geometry"]["right|cup"]["reason"] != reasons[3] for r in default[3:6])
 
 
-# ---- run provenance, timing policy, frame times (review A1 / A6 / A8 / C6) ------------------------
+# ---- run provenance, timing policy, frame times ---------------------------------------------------
 
 def test_queue_policies_frame_times_and_provenance_helpers():
     import run_perception as rp
@@ -403,7 +404,7 @@ def test_timed_recording_loads_the_proposed_script_and_keeps_the_accepted_defaul
     assert default["duration_s"] == 270  # the accepted script is unchanged
 
 
-# ---- architecture and code review, 5 October 2026 ----------
+# ---- CLI settings, ledger joins, tolerances and run records ----------
 
 def _recorded(packet, person):
     """A fixture packet relabelled as a recorded observation of ``person`` (the recorded trainer refuses synthetic ones)."""
@@ -411,6 +412,13 @@ def _recorded(packet, person):
         return replace(p, stamp=replace(p.stamp, source=Source.RECORDED))
     return replace(packet, participant_id=person, hands=tuple(mark(h) for h in packet.hands),
                    objects=tuple(mark(o) for o in packet.objects), telemetry=tuple(mark(t) for t in packet.telemetry))
+
+
+def write_manifest(path, person, session="synthetic-session", clock="session", origin=0.):
+    """The fields of a recording manifest that the comparison reads: identity, clock and the first frame's stamps."""
+    stamp = dict(available_s=origin, clock=clock)
+    path.write_text(json.dumps(dict(participant_id=person, session_id=session, frames=[dict(rgb_stamp=stamp, depth_stamp=stamp)])))
+    return path.name
 
 
 def _comparison_inputs(tmp_path, people=("p1", "p2", "p3")):
@@ -421,7 +429,8 @@ def _comparison_inputs(tmp_path, people=("p1", "p2", "p3")):
         (tmp_path / f"{person}.packets.jsonl").write_text("".join(json.dumps(asdict(_recorded(p, person))) + "\n" for p in scenarios()))
         timeline = [dict(start_s="0", end_s="0.9", left="G", right="NQ"), dict(start_s="0.9", end_s="2", left="NQ", right="NQ")]
         (tmp_path / f"{person}.ledger.json").write_text(json.dumps(convert(timeline, person, "synthetic-session", "a", "session", 2.)))
-        entries.append(dict(packets=f"{person}.packets.jsonl", ledger=f"{person}.ledger.json", origin_s=0.,
+        entries.append(dict(packets=f"{person}.packets.jsonl", ledger=f"{person}.ledger.json",
+                            manifest=write_manifest(tmp_path / f"{person}.recording.json", person),
                             perception_provenance=dict(fit="fixed_external", model_id="fixture", checkpoint_sha256="0" * 64)))
     return entries
 
@@ -429,7 +438,7 @@ def _comparison_inputs(tmp_path, people=("p1", "p2", "p3")):
 def test_the_comparison_cli_accepts_the_documented_replay_config(tmp_path):
     """The `rate_window` setting goes in the comparison's replay `config`; the CLI passed that JSON object on as a
     dict where ``compare`` needs a ``Config`` and stopped with an AttributeError, so no arm could be run with a
-    chosen rate window through the CLI (ledger R39)."""
+    chosen rate window through the CLI."""
     import run_comparison
     entries = _comparison_inputs(tmp_path)
     base = dict(arms=["kt_set", "kt_r"], seeds=[0], steps=2, thresholds=[0.6], selection="fixed")
@@ -451,7 +460,7 @@ def test_the_comparison_cli_accepts_the_documented_replay_config(tmp_path):
 
 def test_folds_mode_applies_the_declared_minimum_people_to_the_combined_contrasts(tmp_path):
     """In folds mode the per-fold reports used the declared ``min_people_for_interval`` while the combined contrasts,
-    the only place where several people meet, silently used the default 5 (ledger R39)."""
+    the only place where several people meet, silently used the default 5."""
     import run_comparison
     entries = _comparison_inputs(tmp_path)
     folds = [dict(held_out_person=p, sessions=entries) for p in ("p1", "p2", "p3")]
@@ -616,7 +625,7 @@ def test_identity_errors_on_an_absent_side_are_counted_under_their_own_denominat
 
 
 def test_a_perception_evaluation_names_its_inputs_and_never_replaces_an_existing_report(tmp_path):
-    """The step-3 perception report carried no input paths or hashes and silently overwrote an earlier report."""
+    """The perception evaluation report carried no input paths or hashes and silently overwrote an earlier report."""
     import hashlib
     import evaluate_perception
     from sg_offline.ledger import write_landmark_ledger
@@ -648,7 +657,7 @@ def test_the_leak_check_needs_lists_of_people_and_sources_record_the_origin(tmp_
 
 
 def test_a_fixed_threshold_contrast_names_arms_that_never_proposed():
-    """The silent-point rule of 2 October lives in development selection only. With a fixed threshold (the default) an
+    """The silent-point rule lives in development selection only. With a fixed threshold (the default) an
     arm that never proposes on the test person still entered every direct contrast, unflagged: "KT-R minus flat =
     +1.0" for a flat arm that issued nothing. Nothing is excluded on test outcomes; the contrast now says so."""
     from sg_offline.experiment import contrasts_from_folds
@@ -674,7 +683,7 @@ def test_a_fixed_threshold_contrast_names_arms_that_never_proposed():
 
 def test_driver_summaries_carry_the_same_build_identifier_as_their_traces(tmp_path, capsys, monkeypatch):
     """`run_motion_checks.py` and `run_rgbd_checks.py` stamped "motion-only-build/2" into summaries whose own trace
-    rows said "motion-only-build/5" (the stored summary of 2 October has this mismatch)."""
+    rows said "motion-only-build/5"."""
     import run_motion_checks, run_rgbd_checks
     from sg_offline import replay
     for driver, summary_name, trace_name in ((run_motion_checks, "motion_only_summary.json", "synthetic_motion_trace.jsonl"),
@@ -784,9 +793,9 @@ def test_the_rate_window_also_reaches_the_feature_for_fixed_frame_points():
     assert feature(clip(True), 4)[6:] == pytest.approx(logged[6:])      # the feature is the logged least-squares rate
 
 
-# ---- pins added after the test audit of 5 October 2026 ---------------------------------------------------------------
-# The audit changed one line at a time in a scratch copy (101 mutants) and found that 64 went unnoticed. The tests below
-# state the VALUES and the neighbouring layouts of the numbers that step 3 reports; they pass on the pre-review code too.
+# ---- value pins for the reported numbers -----------------------------------------------------------------------------
+# The tests below state the VALUES and the neighbouring layouts of the numbers the scoring tools report, so that a
+# one-line change to any of them fails a test; they pass on the earlier code too.
 
 def test_GUARD_the_early_rule_in_the_layouts_the_first_tests_left_open():
     # (i) a request that crosses rows (shared request id): the walk-back still sees the session before the first row

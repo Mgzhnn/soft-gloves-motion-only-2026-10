@@ -1,7 +1,7 @@
-"""Flat-comparator information fix and contrast reporting (2026-09-24). Synthetic, participant N=0.
+"""Flat-comparator information fix and contrast reporting. Synthetic, participant N=0.
 
-regression tests failed on an earlier snapshot; GUARD tests hold on both.
-Counterexample from the independent review: at an exact tie between two objects, averaging the two
+Regression tests failed on the earlier code; GUARD tests hold on both.
+Counterexample: at an exact tie between two objects, averaging the two
 candidate orders turned approach rates (-0.1, +0.1) and (-0.2, +0.2) m/s into the same flat input.
 """
 from dataclasses import replace
@@ -73,7 +73,7 @@ def fold(arm, held, success, feasible=True, dev_success=.5, selection="developme
 
 def test_a_conditional_average_carries_its_feasibility_counts():
     from sg_offline.experiment import contrasts_from_folds
-    # 2 Oct 2026: the simple controls are the fitted M-I / M-C models; the selection and exclusion rules are unchanged.
+    # the simple controls are the fitted M-I / M-C models; the selection and exclusion rules are unchanged.
     folds = [fold("kt_r", "p1", .9, feasible=False), fold("mi_learned", "p1", .5), fold("mc_learned", "p1", .4, dev_success=.3),
              fold("kt_r", "p2", .8), fold("mi_learned", "p2", .5), fold("mc_learned", "p2", .5, dev_success=.2),
              fold("kt_r", "p3", .7), fold("mi_learned", "p3", .4), fold("mc_learned", "p3", .6, dev_success=.9)]

@@ -1,4 +1,4 @@
-"""The one-person fitting diagnostic (fit_diagnostic.py, 16 October 2026): it fits and selects with the comparison fold's own
+"""The one-person fitting diagnostic (fit_diagnostic.py): it fits and selects with the comparison fold's own
 functions, refuses more than one person and never reports a contrast. Synthetic, participant N=0."""
 import csv
 import json
@@ -139,7 +139,7 @@ def test_fit_diagnostic_cli_fits_replays_scores_and_refuses_an_untouched_session
 
 
 def test_diagnostic_runs_under_layout_v2_with_release_admitted(tmp_path, monkeypatch, clip):
-    """16 Oct 2026 (later): a specification may name feature_layout v2 (the run's scene.jsonl is used) and admitted_actions;
+    """A specification may name feature_layout v2 (the run's scene.jsonl is used) and admitted_actions;
     the readouts are built for the layout, the replay sees the scenes and the scoring admits the named actions. Before the
     fix the v2 fit raised 'model feature layout v1 differs from the bundle layout v2' and the scoring admitted G only."""
     manifest1, _ = clip
@@ -148,7 +148,7 @@ def test_diagnostic_runs_under_layout_v2_with_release_admitted(tmp_path, monkeyp
     plane = ("--object-provider", "plane", "--plane-settings", str(tmp_path / "plane_settings.json"))
     run1 = run(tmp_path, monkeypatch, "run_s1", *FIXED, *plane)
     run2 = run(tmp_path, monkeypatch, "run_s2", *FIXED, *plane, manifest=manifest2)
-    assert (run1 / "scene.jsonl").is_file() and (run2 / "scene.jsonl").is_file()          # written by run_perception since 16 Oct 2026
+    assert (run1 / "scene.jsonl").is_file() and (run2 / "scene.jsonl").is_file()          # written by run_perception
     ledger1 = ledger_for(tmp_path, manifest1, run1, "s"); ledger2 = ledger_for(tmp_path, manifest2, run2, "s2")
     monkeypatch.setattr(fit_diagnostic, "git_state", lambda *a, **k: dict(commit=None, note="not queried in tests"))
     spec = dict(scope="synthetic software check", rate_window=1, arms=["rules_actions", "mi_learned", "kt_r"], seeds=[0], steps=3, lr=.01, regularization=.001,

@@ -1,9 +1,9 @@
 """Convert an image-sequence D435 export into an `sg-rgbd-recording/1` manifest.
 
-Folder contract (as recorded on 2026-09-29 with the lab's capture script; tool name to be confirmed):
+Folder contract (as written by the capture script of the reference recordings):
     <stem>_camera_depth/<i>.png          uint16 depth, one file per frame (D435 z16 in depth units)
     <stem>_camera_depth_filled/<i>.png   hole-filled copy; NOT used (interpolated values are not measurements)
-    <stem>_camera_rgb.avi                colour video, one frame per depth image, lossy (FMP4 in the 29 Sep files)
+    <stem>_camera_rgb.avi                colour video, one frame per depth image, lossy (FMP4 in the reference files)
     <stem>_camera_color_timestamp.txt    realsense_time <tab> frame_index   (epoch seconds)
     <stem>_camera_depth_timestamp.txt    realsense_time <tab> frame_index
     <stem>_camera.txt                    host_time <tab> frame_index        (arrival on the recording host)
@@ -12,7 +12,7 @@ The export carries no calibration, so this adapter DECLARES what `d435_recording
 native file, and writes every declaration to `adapter_provenance.json` next to the manifest:
   * the colour-camera intrinsics and their source (`--fx --fy --cx --cy --calibration-source`),
   * that the depth images are registered to the colour image (`--registered-to-rgb`, required; for the
-    29 Sep files this was checked visually: depth edges trace the colour objects),
+    reference files this was checked visually: depth edges trace the colour objects),
   * the depth scale (`--depth-scale`, D435 default 0.001 m per unit),
   * the clock: RealSense timestamps are taken as the global-time domain in epoch seconds, host arrival gives
     availability (`--clock`),

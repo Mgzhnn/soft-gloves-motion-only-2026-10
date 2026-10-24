@@ -1,5 +1,5 @@
-"""Coverage pins for the step-3 tools whose 7 October 2026 mutants still survived both suites when rerun
-on 16 October 2026: S1 (score_requests.score ignores the declared early tolerance), C3 (choose_rate_window drops the
+"""Coverage pins for the scoring tools against single-setting mutants that survived both suites:
+S1 (score_requests.score ignores the declared early tolerance), C3 (choose_rate_window drops the
 eligibility rule), C4 (the chooser scores every tolerance strictly) and C5 (the chooser maximises the burden). Tests
 only; no behaviour changed. Synthetic end-to-end clip, participant N = 0.
 """

@@ -1,4 +1,4 @@
-"""The step-3 command-line tools (score_requests.py, choose_rate_window.py) on the synthetic end-to-end clip; participant N=0."""
+"""The scoring command-line tools (score_requests.py, choose_rate_window.py) on the synthetic end-to-end clip; participant N=0."""
 import csv
 import json
 from pathlib import Path

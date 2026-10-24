@@ -11,8 +11,8 @@ FEATURE_DIM = 42
 KINETIC_FEATURE_COLUMNS = (3, 4, 18, 19)
 FEATURE_MODES = ("motion_only", "motion_and_kinetics")
 
-# ---- feature layouts (16 Oct 2026) ------------------------------------------------------------------
-# "v1" is the 42-column layout of every record before 16 October 2026 and stays the default: bit-identical features.
+# ---- feature layouts ------------------------------------------------------------------
+# "v1" is the original 42-column layout and stays the default: bit-identical features.
 # "v2" appends, before the bias column, one block of ACTION_CUE_NAMES per hand computed on the table-plane anchor and the
 # hand landmarks (scene.py): the observations the five non-grasp actions need. Column order of v2:
 #   [hand 0: 15 v1 columns][hand 1: 15][shared: 11][hand 0: 14 cues][hand 1: 14 cues][bias]
@@ -46,7 +46,7 @@ class Layout:
 
     @property
     def shared(self):
-        """The v1 shared block plus the bias (as the 23 Sep code read it)."""
+        """The v1 shared block plus the bias (as the original code read it)."""
         return list(range(30, 42)) if self.cues_per_hand == 0 else list(range(30, 41)) + [self.bias]
 
     def hand_only(self, hand):
@@ -137,7 +137,7 @@ class Bundle:
 def hypotheses(packet, motions, loads, kinetics=True, max_age_s=.25, role_mode="weak_speed", relatives=None, cues=None, layout="v1"):
     """Transparent uncalibrated geometry/role proposal; keeps null and competing relations.
 
-    ``cues`` (``scene.SceneCues``) and ``layout="v2"`` add the per-action cue block (16 Oct 2026); with the default
+    ``cues`` (``scene.SceneCues``) and ``layout="v2"`` add the per-action cue block; with the default
     layout the bundle is the 42-column bundle of every earlier record, cues or not."""
     layout_of(layout)
     if role_mode not in ("weak_speed", "neutral", "permuted"):
@@ -317,8 +317,8 @@ def hand_target_features(bundle, hand):
             groups.setdefault(h.object_ids[hand], []).append(j)
     if not groups:
         return None
-    # Sums are rounded before comparison: at an exact distance tie two objects' sums differed in the last bit, so the
-    # name tie-break was never reached and the target followed the order of summation (found 5 October 2026).
+    # Sums are rounded before comparison: at an exact distance tie two objects' sums can differ in the last bit, so the
+    # name tie-break would never be reached and the target would follow the order of summation.
     identity = min(groups, key=lambda k: (-round(float(bundle.weights[groups[k]].sum()), 12), k))
     return bundle.features[groups[identity][0], hand*15:(hand+1)*15]
 
@@ -412,8 +412,8 @@ def encode(packet, motions, loads, h, kinetics, relatives=None, cues=None, layou
         # Same physical quantity, d|hand-object|/dt, from same-time distances: needs no fixed frame.
         rel = relatives.get((side, h.object_ids[i])) if relatives and h.object_ids[i] is not None else None
         if rel is not None and rel.rate_mps is not None and rel.reason.startswith("past_least_squares"):
-            # A declared rate window (Config.rate_window > 1) governs the feature in every frame. Before 5 October
-            # 2026 fixed-frame points kept the one-frame projection below whatever the window said. With the
+            # A declared rate window (Config.rate_window > 1) governs the feature in every frame, also
+            # for fixed-frame points, which would otherwise keep the one-frame projection below. With the
             # default window 1 the relative rate is a secant and this branch is never taken.
             radial, vv = rel.rate_mps, True
         elif vv and d > 1e-9:
@@ -677,16 +677,16 @@ class HypothesisPoolMLP(MLPJoint):
         self.fit_provenance = "synthetic_only_no_reference_validation"
 
 
-HARD_TIE_TOLERANCE = 1e-9  # weights equal within this are a tie for the hard-collapse twin (plan default, 16 Oct 2026)
+HARD_TIE_TOLERANCE = 1e-9  # weights equal within this are a tie for the hard-collapse twin (plan default)
 
 
 class HardCollapseLinear(LinearJoint):
     """Hard-collapse twin of KT-R: the same 49x42 readout applied to the single most-supported hypothesis
     (only exact ties, weights equal within 1e-9, are averaged, so the input does not depend on hypothesis
-    order; the plan default accepted on 16 October 2026 replaced the earlier ``isclose`` reading, which merged
+    order; the plan default replaced an earlier ``isclose`` reading, which merged
     near-ties such as 0.500001 / 0.499999). Only the top association
     survives; with the mean-collapse twin (``LinearJoint(False)``) it isolates the retained-hypotheses
-    mechanism of (added 2 Oct 2026; same 2,058 parameters as KT-R)."""
+    mechanism (same 2,058 parameters as KT-R)."""
     def __init__(self, layout="v1"):
         super().__init__(mixture=False, layout=layout)
         self.name = "hard_collapse_linear"
@@ -715,8 +715,8 @@ class FactorizedJoint:
       shared coordination columns, and C adds a learned pairwise coordination term (637 parameters).
 
     Both are fitted on the same labels, passes, learning rate, regularisation and development rule as the
-    relational readouts. They replace the hand-authored ``SimpleRules`` as the simple controls
-    (2 Oct 2026): the rules make identical decisions at every grid threshold and never fit anything, so
+    relational readouts. They replace the hand-authored ``SimpleRules`` as the simple controls:
+    the rules make identical decisions at every grid threshold and never fit anything, so
     "KT-R beats the rules" could not be read as "a learned model beats a simpler learned model".
     """
 
@@ -805,7 +805,7 @@ class FactorizedJoint:
 class SimpleRules:
     """Deliberately small, unvalidated causal rule controls, not external method reproduction.
 
-    Since 2 Oct 2026 these are a DESCRIPTIVE FLOOR, not the simple controls: the per-hand grasp
+    These are a DESCRIPTIVE FLOOR, not the simple controls: the per-hand grasp
     score takes only the values 0.0106 and 0.8617 (0.8991 with coordination), so M-I and M-C decide
     identically at every threshold of the 0.3-0.9 grid and never fit anything. ``FactorizedJoint`` is
     the fitted M-I / M-C pair."""
@@ -841,9 +841,9 @@ class UnresolvedBoundary:
         raise NotImplementedError("external-method equations/configuration unresolved; no invented reproduction")
 
 
-# ---- per-action descriptive floor on the cue block (16 Oct 2026) ---------------------------------------------------
+# ---- per-action descriptive floor on the cue block ---------------------------------------------------
 # Declared, untuned thresholds in the units of the cue block (metres, m/s, radians, cosines), re-expressed from the
-# reference verified cue definitions ( index direction, reversals, held-over-target, swept angle,
+# reference verified cue definitions (index direction, reversals, held-over-target, swept angle,
 # lowering, stillness); like ``SimpleRules`` a transparent floor, never a fitted model and not a external method
 # reconstruction: no Boltzmann likelihood, no recursion, no beta.
 ACTION_RULE_THRESHOLDS = dict(hold_inplane_m=.07, hold_object_height_m=.03, still_rate_mps=.05, lowering_rate_mps=-.04,

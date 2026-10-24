@@ -1,4 +1,4 @@
-"""The plan defaults accepted by owner on 16 October 2026: the hard-collapse control's exact-tie rule and
+"""The plan defaults: the hard-collapse control's exact-tie rule and
 the onset-based development budget. Synthetic, participant N=0."""
 import numpy as np
 import pytest
@@ -18,7 +18,7 @@ def _two_hypothesis_bundle(w0):
 
 def test_hard_collapse_reads_only_the_maximum_unless_the_weights_tie_within_1e_9():
     hard = HardCollapseLinear()
-    near = _two_hypothesis_bundle(0.500001)                                   # the review's example (R76): not a tie
+    near = _two_hypothesis_bundle(0.500001)                                   # a near-tie: not a tie
     x, _ = hard._inputs(near)
     assert np.allclose(x[0], near.features[0])                                # before the change: the two rows were averaged
     exact = _two_hypothesis_bundle(0.5)

@@ -1,0 +1,3 @@
+# The sequence readouts (GRU, TCN, transformer) in sg_offline/sequence.py. Install the CPU build with:
+#   pip install -r requirements-learning.txt --index-url https://download.pytorch.org/whl/cpu
+torch==2.9.1

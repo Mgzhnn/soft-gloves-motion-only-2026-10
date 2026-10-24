@@ -1,4 +1,4 @@
-"""Human-written reference ledgers (M0): landmark labels and opportunity/reference intervals.
+"""Human-written reference ledgers: landmark labels and opportunity/reference intervals.
 
 Evaluation-side only. Nothing here is a runtime input: packets, models and the replay never
 read a ledger (``inputs.py`` rejects label fields by design). Two file formats:
@@ -11,7 +11,7 @@ read a ledger (``inputs.py`` rejects label fields by design). Two file formats:
   stamp so that ``evaluation.evaluate_opportunities`` can join them on ``decision_s``.
 
 The loaders validate structure and vocabulary. They do not establish that a label is correct,
-that an interval is clinically meaningful, or that annotators agreed; those are M0 measurements.
+that an interval is clinically meaningful, or that annotators agreed; those are separate measurements.
 """
 from __future__ import annotations
 
@@ -139,7 +139,7 @@ def landmark_coverage(labels, image_size: tuple[int, int] | None = None) -> dict
         if image_size and l.state == "visible" and l.point != "hand_box" and not (l.u < image_size[0] and l.v < image_size[1]):
             out_of_image += 1
     return {"by_side_point_state": counts, "visible_pixels_outside_image": out_of_image,
-            "scope": "label bookkeeping only; agreement, error and coverage are M0 measurements"}
+            "scope": "label bookkeeping only; agreement, error and coverage are separate measurements"}
 
 
 # ----------------------------------------------------------------------------------------------
@@ -186,7 +186,7 @@ def frame_time_rows(records) -> list[dict]:
     The origin is the availability stamp of the first converted frame, exactly as ``session_origin_s``
     defines it, so ``session_relative_*`` values can be written straight into ``import_requests.py``
     timelines. ``session_relative_acquired_s`` is when the camera saw the frame; the decision tick made
-    from that frame comes later by its availability delay plus processing time (2 Oct 2026).
+    from that frame comes later by its availability delay plus processing time.
     """
     records = list(records)
     if not records:

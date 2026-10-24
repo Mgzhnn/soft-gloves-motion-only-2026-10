@@ -1,4 +1,4 @@
-"""End-to-end checks of the step-3 path (architecture and code review, 5 October 2026). Synthetic, participant N=0.
+"""End-to-end checks of the recording-to-scoring path. Synthetic, participant N=0.
 
 One tiny synthetic `sg-rgbd-recording/1` clip (table + box, a fake right hand sliding toward and onto the box) goes
 through `run_perception.main` (fake hand model, CPU, masks and plane providers, the three timing policies with a fake
@@ -6,8 +6,8 @@ processing clock), then through `label_frames` (Session.set_label / --frame-time
 `import_requests.main`, `ledger.to_opportunities(origin = session_origin_s)` and `evaluation.evaluate_opportunities` on
 the trace read back from `trace.jsonl`. Before this file no test executed `run_perception.main`,
 `evaluate_perception.main` or `import_requests.main`, and every test hand-built the files those commands write.
-The first four tests were prototyped by the review's test auditor and pass on the pre-review code as well: they pin
-the seams (cadence, origin, file formats). The `test_*` tests below them fail on the pre-review snapshot.
+The first four tests pass on the earlier code as well: they pin the seams (cadence, origin, file formats). The `test_*`
+tests below them fail on the earlier code.
 Every run uses a registry path that does not exist and a stubbed Git query, so nothing in the repository is touched.
 """
 import csv
@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 cv2 = pytest.importorskip("cv2")
-try:                         # .venv-gpu has torch; .venv does not: main() only needs a device object and torch.load
+try:                         # torch may be absent: main() only needs a device object and torch.load
     import torch
 except ImportError:
     torch = None
@@ -49,15 +49,15 @@ sys.path.insert(0, str(Path(run_perception.__file__).parent / "tests"))
 from test_tableplane import CAL, synthetic_scene  # noqa: E402
 
 N = 24                       # frames at 30 fps
-T0 = 1790645000.0            # epoch-scale clock, as in the 29 September batch
+T0 = 1790645000.0            # epoch-scale clock, as in the reference recordings
 CLOCK = "d435_global_time_epoch_s"
 HOST_DELAY = 0.003
-FIRST_DELAY = 0.150          # the first frame of the real batch arrived 0.153 s after acquisition
+FIRST_DELAY = 0.150          # the first frame of the real recording arrived 0.153 s after acquisition
 STEP = 0.025                 # fake processing clock: every perf_counter() call advances by 25 ms -> 75 ms per frame
 
 
 def acquired(i):
-    """As in the real batch: the first frame is followed by a 0.2 s start-up gap, then 30 fps."""
+    """As in the real recording: the first frame is followed by a 0.2 s start-up gap, then 30 fps."""
     return T0 + (0. if i == 0 else .2 + (i - 1) / 30.)
 
 
@@ -287,7 +287,7 @@ def test_b_and_d_requests_scored_on_a_replay_trace_with_the_session_origin(tmp_p
     assert late_right[1]["early_by_s"] == pytest.approx(.1, abs=1e-3) and late_right[1]["run_active_at_window_start"] is True
 
 
-# ---- defects found by the architecture and code review of 5 October 2026 ---------------------------------------------
+# ---- regressions in the perception run -------------------------------------------------------------------------------
 
 def test_the_run_confidence_is_the_trackers_confidence_floor(tmp_path, monkeypatch, clip):
     """`--confidence` reached only the detector; the identity tracker kept its own floor of 0.3, so a hand detected at 0.2

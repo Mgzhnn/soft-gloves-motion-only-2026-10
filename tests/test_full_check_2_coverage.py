@@ -1,10 +1,10 @@
-"""Coverage pins for the frozen behaviours the review of 16 October 2026 found unprotected (ANALYSIS R120:
-13 of 28 single-setting mutants survived both suites). Tests only; no behaviour changed. Synthetic, participant N = 0.
+"""Coverage pins for declared behaviours that no test protected (13 of 28 single-setting
+mutants survived both suites). Tests only; no behaviour changed. Synthetic, participant N = 0.
 
 1. best_action_threshold proposes when the best action's score reaches the threshold (>=, not >).
 2. best_action_score is the score of the most probable non-NQ action, not the grasp score.
-3. marginal_argmax withholds exactly as build 5 did (score < threshold); the expected rows were checked against the
-   snapshot 2026-10-16_before_protocol_settings (build 5) on the same cases.
+3. marginal_argmax withholds exactly as build 5 did (score < threshold); the expected rows were checked against
+   build 5 on the same cases.
 4. The patience stop is honoured by every fitting loop (LinearJoint, MLPJoint, HypothesisPoolMLP, FactorizedJoint and
    the torch SequenceReadout), not only the one test_protocol_settings exercises.
 5. fit_diagnostic.py defaults: 2000 passes, patience None, onset burden, learning rate 0.01, THRESHOLDS equal to
@@ -76,7 +76,7 @@ def test_best_action_score_is_the_most_probable_action_not_the_grasp_score():
 
 # marginal_argmax (builds 1-5): the most probable outcome, NQ included, withheld when its own score is below the
 # threshold. (right-hand marginal, threshold) -> (raw outcome, status and reason on ticks 1-8); tick 0 differs only
-# where G passes the score rule (no approach rate yet). Every row was produced identically by the build-5 snapshot.
+# where G passes the score rule (no approach rate yet). Every row was produced identically by build 5.
 BUILD5 = [
     ([.4, .6], .6, "G", ("proposed_simulation_only", "software_rule_only")),               # score == threshold: not withheld
     ([.4, .6], _above(.6), "G", ("withheld", "insufficient_uncalibrated_score")),
@@ -107,7 +107,7 @@ def test_marginal_argmax_boundary_at_every_grid_threshold(t):
     assert all((o["raw_outcome"], o["status"], o["reason"]) == ("G", "withheld", "insufficient_uncalibrated_score") for o in above)
 
 
-LEARNED = [a for a in ARMS if a not in experiment.FLOOR_ARMS]   # every fitted arm (the per-action floor of 16 Oct 2026 has no fitting loop)
+LEARNED = [a for a in ARMS if a not in experiment.FLOOR_ARMS]   # every fitted arm (the per-action floor has no fitting loop)
 
 
 def _arm_examples(arm):

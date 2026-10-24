@@ -1,12 +1,12 @@
 {
   "schema": "sg-recording-script/1",
-  "status": "proposed_v2_2026-10-02_awaiting_decision_not_a_validated_study_protocol",
-  "proposed_by": "agent, from the 28 September 2026 independent review (items B4, EVA-8, NOV-1)",
+  "status": "proposed_v2_awaiting_decision_not_a_validated_study_protocol",
+  "proposed_by": "revision of the v1 script: explicit releases, bimanual and close-object blocks, fixed attempt counts",
   "changes_from_v1": [
     "every grasp block ends with an explicit release by placing, so release gets labels now even though only grasp is scored",
     "a same-object bimanual block (both hands on one cup) and a close-objects block (cup and jar 10 cm apart), where cross-hand association should matter",
     "attempt counts are fixed per block so opportunities per person are known in advance",
-    "duration 300 s; the 23 Sep 270-second script stays the accepted default until a decision is recorded"
+    "duration 300 s; the 270-second v1 script stays the accepted default until a decision is recorded"
   ],
   "duration_s": 300,
   "blocks": [

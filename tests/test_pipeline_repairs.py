@@ -55,7 +55,7 @@ def test_flat_contains_all_candidates_and_is_order_invariant():
     order=list(reversed(range(19)))
     perm=replace(bundle,hypotheses=tuple(bundle.hypotheses[i] for i in order),features=bundle.features[order],weights=bundle.weights[order])
     assert np.array_equal(flat_features(bundle),flat_features(perm))
-    # 2026-09-24: the flat input encodes one row per object (sum and difference products, see
+    # the flat input encodes one row per object (sum and difference products, see
     # inference.flat_features); every hypothesis weight sits in a row or in the both-hands-on-nothing slot.
     from sg_offline.inference import flat_object_rows
     r1,r2=flat_object_rows(bundle);none_none=sum(w for h,w in zip(bundle.hypotheses,bundle.weights) if h.object_ids==(None,None))
@@ -145,7 +145,7 @@ def test_comparison_keeps_people_separate_and_reduces_loss():
     assert len(result['folds'])==6 and all(f['fitting_improved'] for f in result['folds'])
     assert all(f['held_out_person'] not in {p for p,s in f['train_sessions']} for f in result['folds'])
     assert all(f['reporting_threshold']==.6 for f in result['folds'])
-    # 2026-09-23 review completion: contrasts follow; without M-I/M-C arms the primary one is not
+    # contrasts follow; without M-I/M-C arms the primary one is not
     # selectable, so check the matched KT-R minus KT-SET contrast (artificial identifiers, N=0 real people).
     matched=[c for c in result['paired_contrasts'] if c['role']=='matched_control'][0]
     assert matched['n_people']==2 and matched['status']=='descriptive_fixed_threshold'

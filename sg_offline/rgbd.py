@@ -95,7 +95,7 @@ class RGBDFrame:
         """A metric point already computed from THIS frame's registered depth (for example a region centroid
         from ``tableplane.region_geometry``), stamped exactly as ``point_at`` stamps a lifted pixel: the depth
         acquisition time, availability no earlier than the observation, this frame's optical frame and
-        calibration. An unavailable point needs a reason. Added 2026-10-05 for the object providers."""
+        calibration. An unavailable point needs a reason. Used by the object providers."""
         stamp = self._observation_stamp(identity, observation, decision_s)
         if xyz is None:
             if not reason:

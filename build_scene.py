@@ -1,6 +1,6 @@
 """Build the scene records (table plane + hand landmarks) for a STORED perception run, without a GPU.
 
-A perception run before 16 October 2026 wrote packets, detections and diagnostics but no scene file. This tool refits the
+A perception run made before the scene record existed wrote packets, detections and diagnostics but no scene file. This tool refits the
 table plane from the recording's raw depth for every processed frame (same seeded RANSAC and settings as the run's object
 provider, seed = frame index) and lifts the three functional points per hand from the stored diagnostics (``point_xyz``),
 writing ``scene.jsonl`` + ``scene_provenance.json`` into a NEW directory. Nothing in the stored run is touched. New runs of
@@ -41,8 +41,13 @@ def build_scenes(run_dir, manifest, settings: PlaneSettings = PlaneSettings(), d
     recording = RGBDRecording(manifest)
     calibration = recording.calibration
     for packet in packets_from_jsonl(Path(run_dir) / "packets.jsonl"):
+        if (packet.participant_id, packet.session_id) != (recording.participant_id, recording.session_id):
+            raise ValueError(f"{packet.packet_id}: the packets and the recording name different participants or sessions")
         index = frame_index_of(packet.packet_id)
         frame = recording[index]
+        stamp = packet.hands[0].stamp
+        if stamp.acquired_s != frame.depth_stamp.acquired_s or not stamp.sample_id.startswith(frame.frame_id + ":"):
+            raise ValueError(f"{packet.packet_id}: the packet was not made from frame {index} of this recording")
         points, valid = backproject(frame.depth, calibration, frame.invalid_depth_value)
         fit = fit_table_plane(points, valid, seed=index, iterations=settings.iterations, inlier_m=settings.inlier_m,
                               max_samples=settings.max_samples, min_inlier_fraction=settings.min_inlier_fraction)
@@ -67,7 +72,14 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     if a.out_dir.exists() and any(a.out_dir.iterdir()):
         ap.error("output directory must be empty")
-    settings = PlaneSettings(**json.loads(a.plane_settings.read_text())) if a.plane_settings else PlaneSettings()
+    run = json.loads((a.run_dir / "provenance.json").read_text()) if (a.run_dir / "provenance.json").exists() else {}
+    if run.get("manifest_sha256") and run["manifest_sha256"] != sha256_file(a.manifest):
+        ap.error("the manifest is not the one this run was made from (manifest_sha256 differs from the run's provenance.json)")
+    if a.plane_settings:
+        settings = PlaneSettings(**json.loads(a.plane_settings.read_text()))
+    else:  # the run's own plane settings when it used the plane provider, else the defaults
+        recorded = (run.get("settings", {}).get("object_provider") or {}).get("plane_settings")
+        settings = PlaneSettings(**recorded) if recorded else PlaneSettings()
     diag_path = a.run_dir / "perception_diagnostics.jsonl"
     diagnostics = {}
     if diag_path.exists():

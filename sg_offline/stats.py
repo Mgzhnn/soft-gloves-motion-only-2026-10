@@ -1,11 +1,11 @@
-"""Participant-level accounting for the M1 endpoint. People are the units; no interval is invented.
+"""Participant-level accounting for the primary endpoint. People are the units; no interval is invented.
 
 Inputs are the per-opportunity outcomes from ``evaluation.evaluate_opportunities`` (one arm) and the
 in-scope opportunities themselves. Outputs are per-person fractions and exposure-based event counts,
 plus paired per-person differences between two arms. A 95% paired t interval is reported only from
-``MIN_PEOPLE_FOR_INTERVAL`` people upward (experiment_matrix.md: "wide intervals are inconclusive");
-below that the field says why it is absent. p-values are deliberately absent; the frozen analysis plan
-decides the estimator once the pilot exists.
+``MIN_PEOPLE_FOR_INTERVAL`` people upward (wide intervals are inconclusive);
+below that the field says why it is absent. p-values are deliberately absent; the declared analysis plan
+decides the estimator once real data exist.
 """
 from __future__ import annotations
 
@@ -114,18 +114,18 @@ def unwanted_exposure(outcomes, opportunities):
     """Proposal burden on labelled no-request hand-intervals, in two forms.
 
     * ticks: ALL proposed ticks per labelled no-request hand-minute (cadence-dependent; invariant to
-      interval tiling; the 23 Sep metric, kept for comparability).
+      interval tiling; the original metric, kept for comparability).
     * onsets: proposal RUNS that begin inside the interval per hand-minute (a run already active when the
       interval opens is not a new onset). For sustained runs this does not scale with the tick rate and is the
       closer stand-in for "unwanted activations"; a run ends at the first tick that is not a proposal, so on
-      traces that flicker at the tick scale onsets follow the tick count (correction 5 Oct 2026: on the first
+      traces that flicker at the tick scale onsets follow the tick count (on the first
       real rule traces 174 of 202 runs were one or two ticks long). It is still offline replay, not an online
       accident rate.
     Also per interval: time from interval start to the first unwanted proposal, or None when censored; an
     interval is one timeline row of that hand, and a run still active when the row opens counts at its first
     tick. Exposure is LABELLED time: no-request hand-intervals that contain no decision tick at all (a truncated
     or late-started trace) are counted in ``no_request_hand_intervals_without_decision_ticks`` and
-    ``exposure_hand_s_without_decision_ticks`` so that a diluted rate cannot pass unnoticed (5 Oct 2026).
+    ``exposure_hand_s_without_decision_ticks`` so that a diluted rate cannot pass unnoticed.
     The trace cadence must be identical across arms. First-proposal success is separate.
     """
     exposure = defaultdict(float); intervals = defaultdict(int); events = defaultdict(int); onsets = defaultdict(int)
@@ -190,4 +190,4 @@ def paired_contrast(per_person_a, per_person_b, field="success_fraction", min_pe
                 interval_95=interval,
                 scope=("participant-level paired differences with a 95% paired t interval; no test"
                        if interval["mean"] is not None else
-                       "participant-level paired differences; no interval or test with fewer people than the frozen plan requires"))
+                       "participant-level paired differences; no interval or test with fewer people than the declared analysis plan requires"))

@@ -44,8 +44,8 @@ def test_comparison_matches_objects_by_position_and_reports_availability_and_pro
 
 
 def test_an_object_is_never_paired_with_a_different_object_of_the_other_run(tmp_path):
-    """Architecture review, 5 October 2026. Each object of the first run was paired with the nearest unused object of
-    the second within 0.15 m, whatever its name. With the batch's cylinders 0.09-0.10 m apart, a frame in which one
+    """Each object of the first run used to be paired with the nearest unused object of
+    the second within 0.15 m, whatever its name. With the recorded cylinders 0.09-0.10 m apart, a frame in which one
     run saw only the blue and the other only the cream cylinder was recorded as a 0.1 m "position difference" (16
     such pairs in the stored trial_2 record). Runs that use the same names are now paired by name."""
     frames = range(10)
@@ -92,7 +92,7 @@ def test_two_runs_of_one_provider_kind_keep_separate_rows_and_pairs(tmp_path):
 
 
 def test_runs_that_cannot_be_compared_are_refused_not_reported_as_empty(tmp_path):
-    """A run folder written before 5 October has no `frame_index`/`object_xyz` in its diagnostics; it was joined by row
+    """A run folder written by an older version has no `frame_index`/`object_xyz` in its diagnostics; it was joined by row
     number and reported with zero objects. Two runs of different recordings were compared without a word."""
     frames = range(4)
     good = write_run(tmp_path, "good", "colour", {f: {"blue": (0., 0., .6)} for f in frames}, {})

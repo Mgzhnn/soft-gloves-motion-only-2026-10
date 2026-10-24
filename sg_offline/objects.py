@@ -1,4 +1,4 @@
-"""Object providers for proposed (5 October 2026).
+"""Object providers for the object-perception comparison.
 
 * ``PlaneClusterObjects`` (B, the matched simple comparator): RANSAC table plane, clusters above it with arm,
   hand and far-field removal (``tableplane.clusters``), identities kept by nearest 3-D centroid.
@@ -83,7 +83,7 @@ class PlaneClusterObjects:
     frames may adopt an unmatched cluster beyond the gate (an object that was moved while out of view).
     Identities are generic (``object_1`` …); the provider cannot know what the objects are.
 
-    Limits measured on 5 October 2026 (architecture review; recorded, behaviour unchanged): a track's last position
+    Known limits (measured; behaviour unchanged): a track's last position
     is kept in camera coordinates however old it is, so after a gap an identity can adopt a DIFFERENT physical
     object that appears within the gate, without the ``reacquired`` flag (trial_2: ``object_2`` is the cream
     cylinder in 185 and the blue one in 15 of its 212 available frames; 160 of the 173 two-object frames are the
@@ -211,7 +211,7 @@ class MaskObjects:
         if not path.exists():
             if self.written_range is not None and self.written_range[0] <= source_index < self.written_range[1]:
                 # Inside the declared range a missing file is lost data (a failed write, a deleted file), not an
-                # absent object: before 5 October 2026 it was reported as "mask_file_absent" like any other frame.
+                # absent object, so it is not reported as "mask_file_absent" like any other frame.
                 raise ValueError(f"{path.name} is missing although objects.json declares frames {self.written_range[0]}..{self.written_range[1] - 1} "
                                  "as written; the mask set is incomplete")
             return {name: ObjectObservation(name, None, reason="mask_file_absent", details=dict(source=self.name)) for name in self.labels.values()}

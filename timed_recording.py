@@ -2,7 +2,7 @@
 
 The default is the accepted 270-second script (recording_script.json). ``--script PATH`` displays another
 timeline, e.g. recording_script_v2_proposed.json (release, same-object bimanual and close-objects blocks,
-proposed 2 Oct 2026 and awaiting decision; not a validated study protocol)."""
+proposed and awaiting decision; not a validated study protocol)."""
 import argparse,json,time
 from pathlib import Path
 

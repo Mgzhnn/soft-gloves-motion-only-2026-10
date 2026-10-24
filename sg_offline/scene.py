@@ -1,4 +1,4 @@
-"""Scene anchor and hand landmarks: the observations the five non-grasp actions need (16 October 2026).
+"""Scene anchor and hand landmarks: the observations the five non-grasp actions need.
 
 The packet contract ``sg-offline/3`` is unchanged: a scene record is a SIDE record keyed by ``packet_id`` (``scene.jsonl``
 next to ``packets.jsonl``), so every stored packet, trace and record stays valid and a replay without scenes is the
@@ -7,7 +7,7 @@ replay of before. A scene carries, per decision tick:
 * ``SupportPlane`` — the table plane fitted from this frame's registered depth (seeded RANSAC, ``tableplane.py``), as a unit
   normal and offset in the frame's optical frame. Height above a world-fixed plane is the same number whatever the
   camera does, so heights, height rates (vertical velocity), in-plane distances and swept angles about the plane normal
-  are camera-invariant WITHOUT a camera pose. Measured on 16 October 2026 on the development clip trial_2: hand
+  are camera-invariant WITHOUT a camera pose. Measured on the development clip trial_2: hand
   height at rest varies by 1-2 mm (sd) while the head turns through 9 degrees of tilt; the fit costs 9 ms per frame on CPU.
 * ``HandLandmarks`` — the three functional points per hand in 3-D (thumb MCP, index MCP, trapezium proxy), when the
   tracker lifted them; they give the index direction and the thumb-index bisector (grasp,
@@ -263,7 +263,7 @@ class PlaneGeometry:
 
     def __init__(self, max_gap_s=0.25, window=8, reversal_window=8, reversal_deadband_mps=0.1):
         """``reversal_deadband_mps``: a vertical secant counts toward a direction reversal only above this speed; the
-        hand's height noise at rest (1-4 mm per tick at 15 Hz, measured 16 Oct 2026) gives secants of a few cm/s that
+        hand's height noise at rest (1-4 mm per tick at 15 Hz, measured) gives secants of a few cm/s that
         flip sign every tick, so a dead band well above it is needed (declared, untuned; a shake moves at 0.3-1 m/s)."""
         if type(window) is not int or window < 1 or type(reversal_window) is not int or reversal_window < 1:
             raise ValueError("windows must be positive integers")
@@ -322,7 +322,9 @@ class PlaneGeometry:
                 reversals[hand.identity] = None
                 continue
             chain = self.heights[hand.identity]
-            if len(chain) >= 2 and chain[-1][1] > chain[-2][1]:
+            if len(chain) < 2:
+                self.rates.pop(hand.identity, None)  # the chain restarted (gap, calibration change): older rates belong to another stretch
+            elif chain[-1][1] > chain[-2][1] and (not self.rates.get(hand.identity) or self.rates[hand.identity][-1][1] < chain[-1][1]):
                 secant = (chain[-1][0] - chain[-2][0]) / (chain[-1][1] - chain[-2][1])
                 self.rates[hand.identity] = (self.rates.get(hand.identity, []) + [(secant, chain[-1][1])])[-(self.reversal_window + 1):]
             rates = [r for r, _ in self.rates.get(hand.identity, []) if abs(r) > self.deadband]

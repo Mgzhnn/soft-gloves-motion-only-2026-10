@@ -1,6 +1,6 @@
 """Simulated glove supervisor: a per-hand finite state machine that turns proposals into accepted glove commands.
 
-Simulation only (16 October 2026). No hardware API is called here: the output is a list
+Simulation only. No hardware API is called here: the output is a list
 of ``Command`` records that a glove interface would consume, and a per-tick state trace. The structure follows the
 reference state machine (Hand Open -> Close Hand -> Tighten Finger -> Close Hand -> Hand Open; Hand Open -> Extend Index
 -> Hand Open) and its execution conditions (contact-type actions execute when the hand is nearly still; motion-type
@@ -10,7 +10,7 @@ state, a veto input that opens the glove at once, and a hold rule: when the hand
 state and never moves (an open glove stays open, a closed glove keeps holding) until a confirmed proposal or a veto.
 
 Every duration below is a DECLARED placeholder, not a measurement: the glove's closure and opening times are unknown
-(no measurement on 16 October 2026) and must be measured on the powered glove before any online use. The flexion targets are
+(not yet measured) and must be measured on the powered glove before any online use. The flexion targets are
 the reference approximate stroke fractions (Extend Index ~0, Hand Open ~0.25, Close Hand ~0.55, Tighten ~0.8 of full
 stroke, object-size adjusted) and are placeholders for the same reason.
 """
@@ -121,7 +121,9 @@ class GloveStateMachine:
         if h.state == "closing" and elapsed >= c.close_duration_s:
             h.state, h.since_s = "closed", t
         elif h.state == "releasing" and elapsed >= c.open_duration_s:
-            h.state, h.since_s = "cooldown", t
+            # the cool-down starts when the opening ends, not at the tick that notices it
+            h.state, h.since_s = "cooldown", h.since_s + c.open_duration_s
+            elapsed = t - h.since_s + 1e-9
         elif h.state == "tightening" and elapsed >= c.tighten_duration_s:
             h.state, h.since_s = "tight", t
         elif h.state == "extending_index" and elapsed >= c.extend_duration_s:
@@ -169,8 +171,8 @@ class GloveStateMachine:
         to_state = dict(close="closing", tighten="tightening", extend_index="extending_index", open="releasing")[kind]
         target = FLEXION_TARGET[kind]
         if kind in ("close", "tighten") and c.size_scaling and object_size_m is not None and isfinite(object_size_m):
-            # the reference object-size adjustment: smaller objects pull further; +-0.1 band, declared placeholder
-            target = min(1., max(0., target + .1 * (1. - min(max(object_size_m, .03), .13) / .08)))
+            # the reference object-size adjustment: smaller objects pull further; +-0.1 band over 3-13 cm, declared placeholder
+            target = min(1., max(0., target + .1 * (.08 - min(max(object_size_m, .03), .13)) / .05))
         command = Command(self.side, t, kind, h.state, to_state, outcome, float(output.get("outcome_score") or 0.),
                           "confirmed_proposal_" + ("executed_at_once" if outcome not in CONTACT_TYPE else "contact_type"),
                           target, object_size_m)
@@ -190,6 +192,13 @@ def _still(row, i, threshold=None):
     if rate is None:
         return None
     return abs(rate) < (FSMConfig().still_rate_mps if threshold is None else threshold)
+
+
+def _object_size(row, side):
+    """The candidate object's footprint for this hand when the trace row carries ``object_size_m`` ({side: metres});
+    the replay does not record it yet, so the size adjustment applies only to traces that add it."""
+    size = (row.get("object_size_m") or {}).get(side)
+    return None if size is None else float(size)
 
 
 def simulate_commands(rows, config: FSMConfig = FSMConfig(), vetoes=(), stops=()):
@@ -218,7 +227,8 @@ def simulate_commands(rows, config: FSMConfig = FSMConfig(), vetoes=(), stops=()
                 pending_veto[side].pop(0)
             if stop:
                 pending_stop[side].pop(0)
-            command = machines[side].step(t, out, hand_observed=observed, still=_still(row, i, config.still_rate_mps), veto=veto, stop=stop)
+            command = machines[side].step(t, out, hand_observed=observed, still=_still(row, i, config.still_rate_mps), veto=veto, stop=stop,
+                                          object_size_m=_object_size(row, side))
             if command is not None:
                 commands.append(command)
             tick[side] = machines[side].hand.state

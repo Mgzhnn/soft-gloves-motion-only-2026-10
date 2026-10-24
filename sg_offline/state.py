@@ -64,13 +64,13 @@ class RelativeGeometry:
 
     The Euclidean distance between two points observed at the same instant in the same
     calibrated camera frame is invariant to rigid camera motion, so its rate over a bounded
-    gap is admissible under even while directional velocity must be withheld.
+    gap is admissible even while directional velocity must be withheld.
 
     ``window=1`` (default) is the past secant over the last admissible pair, bit-for-bit the
-    23 Sep behaviour. ``window=K>1`` fits a causal least-squares slope over up to K past pairs
+    original behaviour. ``window=K>1`` fits a causal least-squares slope over up to K past pairs
     plus the current one, all chained within ``max_gap_s`` and under one calibration/point
     definition; it exists because the one-frame secant is noise-dominated at 15-30 fps relative
-    to the -4 mm/s rule threshold (review B10, 2 Oct 2026). The window is a batch setting chosen
+    to the -4 mm/s rule threshold. The window is a batch setting chosen
     once on development data (``replay.Config.rate_window``), never per clip."""
 
     def __init__(self, max_gap_s=0.25, window=1):
